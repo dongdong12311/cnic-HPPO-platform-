@@ -1,0 +1,17 @@
+Metadata-Version: 1.1
+Name: trading-system
+Version: 1.0
+Summary: A mini spider framework, like Scrapy
+Home-page: #
+Author: itcast
+Author-email: your@email.com
+License: Apache License v2
+Description: UNKNOWN
+Platform: UNKNOWN
+Classifier: Programming Language :: Python
+Classifier: Operating System :: Microsoft :: Windows
+Classifier: Operating System :: Unix
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.4
+Classifier: Programming Language :: Python :: 3.5
+Classifier: Programming Language :: Python :: 3.6

@@ -1,0 +1,1 @@
+{"stragety": "sample_bl_model", "start": 20180101, "end": 20181230, "initial_capital": 1000000, "benchmark": "000001.SH", "balanced_dates": {"method": "equal_difference", "param": 20}, "stocks": ["000001.SZ", "000002.SZ", "000004.SZ", "000005.SZ", "000006.SZ", "000007.SZ"], "expected_return_days": 30, "cleaned_weights": true, "opt_param": []}
