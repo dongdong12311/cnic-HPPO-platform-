@@ -12,7 +12,7 @@ import json
 from bayes_opt import BayesianOptimization
 import sys
 sys.path.append('/home/dongdong/桌面/platform/examples')
-with open('markowitz_1.json') as f:
+with open('hpr.json') as f:
     config =  json.load(f)
 try:
     my_stragety = __import__(config['stragety'])
@@ -65,12 +65,10 @@ def get_data_type(dic):
         data_type.update({key: dic['data_type']})
         
 if len(config['opt_param']):
-    res = bayesian_search(config)
+    res = grid_search(config)
 
 
 else:
     res = Run_func(my_stragety.initialize,my_stragety.handle_data,config)
     result.append(res)
     
-   
-
