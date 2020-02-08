@@ -7,12 +7,11 @@ Created on Wed Jul 17 13:49:27 2019
 """
 
 'update data'
-from const import *
-import os
+from .const import *
 import numpy as np
 import pandas as pd
-from ts_api import pro
-from tushare_market_data import LoadTsTradeCalendar
+from .ts_api import pro
+from .tushare_market_data import LoadTsTradeCalendar
 from dateutil.parser import parse
 def GetLatestMeta(data,meta):
     if len(data[meta]):    
@@ -22,6 +21,7 @@ def GetLatestMeta(data,meta):
     return date
     
 def Update_daily_trading_calendar(file_path):
+
     global pro
     data = pd.read_csv(file_path,dtype = {TRADE_DATE:str})
     latest_date = GetLatestMeta(data,TRADE_DATE)
@@ -58,7 +58,10 @@ def Update(file_paths,code):
     
 def update_stock_index(file_path):
     import os
-    os.mkdir(file_path)
+    try:
+        os.mkdir(file_path)
+    except:
+        pass
     global pro
     index_dic = {
         'MSCI':'MSCI指数',
@@ -76,9 +79,9 @@ def update_stock_index(file_path):
         df = pro.index_basic(market= key )
         for code in df['ts_code']:
             "this should be removed "
-            #if code == '000001.SH' or code == '000300.SH':
-            data = pro.index_daily(ts_code=code)
-            data = data.sort_values(by = 'trade_date')
-            data = data.drop(['ts_code'],axis=1)
-            data.to_csv(os.path.join(file_path,code),index = False)
+            if code == '000001.SH' or code == '000300.SH':
+                data = pro.index_daily(ts_code=code)
+                data = data.sort_values(by = 'trade_date')
+                data = data.drop(['ts_code'],axis=1)
+                data.to_csv(os.path.join(file_path,code),index = False)
         

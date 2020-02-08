@@ -5,7 +5,7 @@ Created on Wed Jul 17 22:20:56 2019
 
 @author: dongdong
 """
-from const import *
+from .const import token
 import tushare as ts
 ts.set_token(token)
 pro = ts.pro_api()

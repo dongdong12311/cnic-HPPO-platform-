@@ -5,7 +5,7 @@ Created on Wed Jul 17 10:09:24 2019
 
 @author: dongdong
 """
-base_path = "E:\trading_data"
+base_path = "E:\\trading_data"
 trading_calendar_path = "trading_calendar"
 stock_index_path = "stock_index"
 daily_data_path = "daily_data"
