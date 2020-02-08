@@ -12,4 +12,4 @@ pro = ts.pro_api()
 def GetStockList():
     global pro
     data = pro.query('stock_basic', exchange='', list_status='L', fields='ts_code,symbol,name,area,industry,list_date')
-    return data['ts_code']
+    return data['ts_code']                                    

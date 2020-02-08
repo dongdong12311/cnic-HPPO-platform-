@@ -14,10 +14,8 @@ import sys
 sys.path.append('/home/dongdong/桌面/platform/examples')
 with open('hpr.json') as f:
     config =  json.load(f)
-try:
-    my_stragety = __import__(config['stragety'])
-except:
-    print("could not read config.stragety")
+my_stragety = __import__(config['stragety'])
+
 result = []
 
 def get_sharp(config):

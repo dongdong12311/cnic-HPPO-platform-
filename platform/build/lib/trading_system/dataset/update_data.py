@@ -57,6 +57,8 @@ def Update(file_paths,code):
     res.to_csv(file_paths,index = False,columns = listed_meta)
     
 def update_stock_index(file_path):
+    import os
+    os.mkdir(file_path)
     global pro
     index_dic = {
         'MSCI':'MSCI指数',
