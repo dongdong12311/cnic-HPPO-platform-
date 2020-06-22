@@ -1,0 +1,89 @@
+.. _intro-overview:
+
+====================
+介绍
+====================
+
+
+
+CNICPortfolio 是一款专注于投资组合分析的高性能计算平台。
+
+CNICPortfolio 具有灵活的配置方式，强大的扩展性，用户可以非常容易地定制专属于自己的程序化交易系统。
+
+特点
+============================
+
+======================    =================================================================================
+简单                          您只需要集中于投资组合策略开发
+易用                          我们为您提供了丰富的投资组合分析算法，方便您学习开发
+高性能                         整个平台采用高效的事件驱动框架编写，配合超算可以快速返回分析结果
+可扩展                         您可以轻松定制自己想要的API 编写自己的投资组合策略
+======================    =================================================================================
+
+
+
+
+样例策略
+==================
+
+在我们的examples文件夹中，其中包含几个经典样例策略:
+
+* sample_buy_and_hold.py                在某一段时间内持有投资组合
+* sample_markowitz.py                   Markowitz 均值方差模型
+* sample_var.py                         条件在险价值(CVaR)模型
+* sample_hpr.py                         等级风险平价(HPR)模型
+
+
+运行回测
+==================
+
+您可以通过在example.py 函数中导入 sample_markowitz.py 进行运行
+
+.. code-block:: python3
+
+    from trading_system.engine import Run_func
+    from trading_system.plot.plot import plot_result
+    from trading_system.generate_parameter import generate,print_tree,generate_all_param
+    import json
+    with open('markowitz.json') as f:
+        config =  json.load(f)
+    try:
+        stragety = __import__(config['stragety'])
+    except:
+        print("could not read config.stragety")    
+    
+    res = Run_func(stragety.initialize,stragety.handle_data,config)
+    
+    
+    
+等待回测结束后，将显示您的收益率和Risk。
+
+绘制回测结果
+==================
+
+如果运行完回测后，还需要再次绘制回测结果，可以运行以下命令:
+
+.. code-block:: python3
+
+    $ plot_result(res['sys_analyser'])
+
+绘制结果
+==================
+
+您可以通过Run_func返回的结果进行分析
+
+* summary               回测摘要
+* stock_portfolios      股票帐号的市值
+* future_portfolios     期货帐号的市值
+* total_portfolios      总账号的的市值
+* benchmark_portfolios  基准帐号的市值
+* stock_positions       股票持仓
+* future_positions      期货仓位
+* benchmark_positions   基准仓位
+* trades                交易详情（交割单）
+* plots                 调用plot画图时，记录的值
+
+.. image:: /_static/1.png
+
+
+

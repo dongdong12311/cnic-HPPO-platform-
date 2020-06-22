@@ -1,0 +1,202 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>介绍 &#8212; CNICPortofolio 0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="教程：均值方差模型" href="tutorial.html" />
+    <link rel="prev" title="CNICPortfolio|version| Documentation" href="../index.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="tutorial.html" title="教程：均值方差模型"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../index.html" title="CNICPortfolio|version| Documentation"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">CNICPortofolio 0.0 documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="intro-overview">
+<span id="id1"></span><h1>介绍<a class="headerlink" href="#intro-overview" title="Permalink to this headline">¶</a></h1>
+<p>CNICPortfolio 是一款专注于投资组合分析的高性能计算平台。</p>
+<p>CNICPortfolio 具有灵活的配置方式，强大的扩展性，用户可以非常容易地定制专属于自己的程序化交易系统。</p>
+<div class="section" id="id2">
+<h2>特点<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="docutils">
+<colgroup>
+<col width="21%" />
+<col width="79%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>简单</td>
+<td>您只需要集中于投资组合策略开发</td>
+</tr>
+<tr class="row-even"><td>易用</td>
+<td>我们为您提供了丰富的投资组合分析算法，方便您学习开发</td>
+</tr>
+<tr class="row-odd"><td>高性能</td>
+<td>整个平台采用高效的事件驱动框架编写，配合超算可以快速返回分析结果</td>
+</tr>
+<tr class="row-even"><td>可扩展</td>
+<td>您可以轻松定制自己想要的API 编写自己的投资组合策略</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="id3">
+<h2>样例策略<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h2>
+<p>在我们的examples文件夹中，其中包含几个经典样例策略:</p>
+<ul class="simple">
+<li>sample_buy_and_hold.py                在某一段时间内持有投资组合</li>
+<li>sample_markowitz.py                   Markowitz 均值方差模型</li>
+<li>sample_var.py                         条件在险价值(CVaR)模型</li>
+<li>sample_hpr.py                         等级风险平价(HPR)模型</li>
+</ul>
+</div>
+<div class="section" id="id4">
+<h2>运行回测<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h2>
+<p>您可以通过在example.py 函数中导入 sample_markowitz.py 进行运行</p>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">trading_system.engine</span> <span class="k">import</span> <span class="n">Run_func</span>
+<span class="kn">from</span> <span class="nn">trading_system.plot.plot</span> <span class="k">import</span> <span class="n">plot_result</span>
+<span class="kn">from</span> <span class="nn">trading_system.generate_parameter</span> <span class="k">import</span> <span class="n">generate</span><span class="p">,</span><span class="n">print_tree</span><span class="p">,</span><span class="n">generate_all_param</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;markowitz.json&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">config</span> <span class="o">=</span>  <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">stragety</span> <span class="o">=</span> <span class="nb">__import__</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;stragety&#39;</span><span class="p">])</span>
+<span class="k">except</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;could not read config.stragety&quot;</span><span class="p">)</span>
+
+<span class="n">res</span> <span class="o">=</span> <span class="n">Run_func</span><span class="p">(</span><span class="n">stragety</span><span class="o">.</span><span class="n">initialize</span><span class="p">,</span><span class="n">stragety</span><span class="o">.</span><span class="n">handle_data</span><span class="p">,</span><span class="n">config</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>等待回测结束后，将显示您的收益率和Risk。</p>
+</div>
+<div class="section" id="id5">
+<h2>绘制回测结果<a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h2>
+<p>如果运行完回测后，还需要再次绘制回测结果，可以运行以下命令:</p>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span>$ plot_result(res[&#39;sys_analyser&#39;])
+</pre></div>
+</div>
+</div>
+<div class="section" id="id6">
+<h2>绘制结果<a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h2>
+<p>您可以通过Run_func返回的结果进行分析</p>
+<ul class="simple">
+<li>summary               回测摘要</li>
+<li>stock_portfolios      股票帐号的市值</li>
+<li>future_portfolios     期货帐号的市值</li>
+<li>total_portfolios      总账号的的市值</li>
+<li>benchmark_portfolios  基准帐号的市值</li>
+<li>stock_positions       股票持仓</li>
+<li>future_positions      期货仓位</li>
+<li>benchmark_positions   基准仓位</li>
+<li>trades                交易详情（交割单）</li>
+<li>plots                 调用plot画图时，记录的值</li>
+</ul>
+<img alt="../_images/1.png" src="../_images/1.png" />
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">介绍</a><ul>
+<li><a class="reference internal" href="#id2">特点</a></li>
+<li><a class="reference internal" href="#id3">样例策略</a></li>
+<li><a class="reference internal" href="#id4">运行回测</a></li>
+<li><a class="reference internal" href="#id5">绘制回测结果</a></li>
+<li><a class="reference internal" href="#id6">绘制结果</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="../index.html"
+                        title="previous chapter">CNICPortfolio|version| Documentation</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="tutorial.html"
+                        title="next chapter">教程：均值方差模型</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/intro/overview.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="tutorial.html" title="教程：均值方差模型"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../index.html" title="CNICPortfolio|version| Documentation"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">CNICPortofolio 0.0 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+        &#169; Copyright .
+      Last updated on Nov 07, 2019.
+    </div>
+<script type="text/javascript">
+    console.log("RQAlpha Powered By RiceQuant.");
+</script>
+
+  </body>
+</html>

@@ -1,0 +1,175 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>收集策略日志 &#8212; CNICPortofolio 0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="&lt;no title&gt;" href="../history.html" />
+    <link rel="prev" title="扩展数据源" href="data_source.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../history.html" title="&lt;no title&gt;"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="data_source.html" title="扩展数据源"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">CNICPortofolio 0.0 documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="development-collection-logs">
+<span id="id1"></span><h1>收集策略日志<a class="headerlink" href="#development-collection-logs" title="Permalink to this headline">¶</a></h1>
+<p>RQAlpha 采用 <a class="reference external" href="https://logbook.readthedocs.io/en/stable/">logbook</a> 作为默认的日志模块，开发者可以通过在 mod 中为 logger 添加 handler 实现自定义的日志收集。</p>
+<div class="section" id="mod">
+<h2>Mod 示例<a class="headerlink" href="#mod" title="Permalink to this headline">¶</a></h2>
+<p>首先要做的是实现 <a class="reference external" href="https://logbook.readthedocs.io/en/stable/quickstart.html#handlers">handler</a> 对象，此处实现的 handler 对象接受 <code class="code docutils literal notranslate"><span class="pre">send_log_handler</span></code> 函数作为参数，该函数会在打印日志的时候被调用。</p>
+<p>formatter 使用了 <code class="code docutils literal notranslate"><span class="pre">rqalpha.utils.logger.user_std_handler_log_formatter</span></code>，该 formatter 在输出策略日志的时候会选用策略运行的时间而非物理时间作为日志的时间戳。</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">logbook.handlers</span> <span class="kn">import</span> <span class="n">Handler</span><span class="p">,</span> <span class="n">StringFormatterHandlerMixin</span>
+<span class="kn">from</span> <span class="nn">logbook.base</span> <span class="kn">import</span> <span class="n">NOTSET</span>
+
+<span class="kn">from</span> <span class="nn">rqalpha.environment</span> <span class="kn">import</span> <span class="n">Environment</span>
+<span class="kn">from</span> <span class="nn">rqalpha.utils.logger</span> <span class="kn">import</span> <span class="n">user_std_handler_log_formatter</span>
+
+
+<span class="k">class</span> <span class="nc">LogHandler</span><span class="p">(</span><span class="n">Handler</span><span class="p">,</span> <span class="n">StringFormatterHandlerMixin</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">send_log_handler</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">NOTSET</span><span class="p">,</span> <span class="n">format_string</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="nb">filter</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">bubble</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="n">Handler</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">,</span> <span class="nb">filter</span><span class="p">,</span> <span class="n">bubble</span><span class="p">)</span>
+        <span class="n">StringFormatterHandlerMixin</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">format_string</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">send_log_handler</span> <span class="o">=</span> <span class="n">send_log_handler</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">formatter</span> <span class="o">=</span> <span class="n">user_std_handler_log_formatter</span>
+
+    <span class="k">def</span> <span class="nf">_write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level_name</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="n">Environment</span><span class="o">.</span><span class="n">get_instance</span><span class="p">()</span><span class="o">.</span><span class="n">calendar_dt</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">send_log_handler</span><span class="p">(</span><span class="n">dt</span><span class="p">,</span> <span class="n">item</span><span class="p">,</span> <span class="n">level_name</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">emit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record</span><span class="p">):</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lock</span><span class="o">.</span><span class="n">acquire</span><span class="p">()</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_write</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">level_name</span><span class="p">,</span> <span class="n">msg</span><span class="p">)</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">lock</span><span class="o">.</span><span class="n">release</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Mod 的实现如下，该 Mod 所做的所有工作仅仅是初始化了 <code class="code docutils literal notranslate"><span class="pre">LogHandler</span></code> 对象并将其传给 user_log 和 user_system_logger。另外需要实现 <code class="code docutils literal notranslate"><span class="pre">_send_log</span></code> 方法，将日志送往需要的去处。</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">rqalpha.interface</span> <span class="kn">import</span> <span class="n">AbstractMod</span>
+<span class="kn">from</span> <span class="nn">rqalpha.utils.logger</span> <span class="kn">import</span> <span class="n">user_system_log</span><span class="p">,</span> <span class="n">user_log</span>
+
+
+<span class="k">class</span> <span class="nc">CustomLogHandlerMod</span><span class="p">(</span><span class="n">AbstractMod</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_send_log</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">log_tag</span><span class="p">):</span>
+        <span class="c1"># TODO</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">start_up</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">env</span><span class="p">,</span> <span class="n">mod_config</span><span class="p">):</span>
+        <span class="n">user_log</span><span class="o">.</span><span class="n">handlers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">LogHandler</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_send_log</span><span class="p">,</span> <span class="n">bubble</span><span class="o">=</span><span class="bp">True</span><span class="p">))</span>
+        <span class="n">user_system_log</span><span class="o">.</span><span class="n">handlers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">LogHandler</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_send_log</span><span class="p">,</span> <span class="n">bubble</span><span class="o">=</span><span class="bp">True</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">tear_down</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">code</span><span class="p">,</span> <span class="n">exception</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+
+<span class="k">def</span> <span class="nf">load_mod</span><span class="p">():</span>
+    <span class="k">return</span> <span class="n">CustomLogHandlerMod</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">收集策略日志</a><ul>
+<li><a class="reference internal" href="#mod">Mod 示例</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="data_source.html"
+                        title="previous chapter">扩展数据源</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="../history.html"
+                        title="next chapter">&lt;no title&gt;</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/development/collecting_logs.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../history.html" title="&lt;no title&gt;"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="data_source.html" title="扩展数据源"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">CNICPortofolio 0.0 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+        &#169; Copyright .
+      Last updated on Sep 06, 2019.
+    </div>
+<script type="text/javascript">
+    console.log("RQAlpha Powered By RiceQuant.");
+</script>
+
+  </body>
+</html>

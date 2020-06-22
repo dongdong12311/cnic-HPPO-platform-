@@ -1,0 +1,583 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>扩展数据源 &#8212; CNICPortofolio 0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="收集策略日志" href="collecting_logs.html" />
+    <link rel="prev" title="扩展事件源" href="event_source.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="collecting_logs.html" title="收集策略日志"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="event_source.html" title="扩展事件源"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">CNICPortofolio 0.0 documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="development-data-source">
+<span id="id1"></span><h1>扩展数据源<a class="headerlink" href="#development-data-source" title="Permalink to this headline">¶</a></h1>
+<p>在程序化交易的过程中，数据的获取是非常重要的一个环节，而数据又包含很多种不同类型的数据，有行情数据、财务数据、指标因子数据以及自定义类型数据。</p>
+<p>在实际交易过程中，对接数据源主要分为两种：</p>
+<ul class="simple">
+<li>增加自有数据源<ul>
+<li>策略中直接读取自有数据</li>
+<li>在策略中 <cite>import</cite> 自定义模块</li>
+<li>扩展 API 实现自有数据的读取</li>
+</ul>
+</li>
+<li>替换已有数据源<ul>
+<li>基础数据</li>
+<li>行情数据</li>
+</ul>
+</li>
+</ul>
+<div class="section" id="id2">
+<h2>增加自有数据源<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id3">
+<h3>策略中直接读取自有数据<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
+<p>RQAlpha 不限制本地运行的策略调使用哪些库，因此您可以直接在策略中读取文件、访问数据库等，但需要关注如下两个注意事项:</p>
+<ul class="simple">
+<li>请在 <code class="code docutils literal notranslate"><span class="pre">init</span></code>, <code class="code docutils literal notranslate"><span class="pre">before_trading</span></code>, <code class="code docutils literal notranslate"><span class="pre">handle_bar</span></code>, <code class="code docutils literal notranslate"><span class="pre">handle_tick</span></code>, <code class="code docutils literal notranslate"><span class="pre">after_trading</span></code> 等函数中读取自有数据，而不要在函数外执行数据获取的代码，否则可能会产生异常。</li>
+<li>RQAlpha 是读取策略代码并执行的，因此实际当前路径是运行 <cite>rqalpha</cite> 命令的路径，策略使用相对路径容易产生异常。如果您需要根据策略路径来定位相对路径可以通过 <code class="code docutils literal notranslate"><span class="pre">context.config.base.strategy_file</span></code> 来获取策略路径，从而获取相对策略文件的其他路径，具体使用方式请看下面的示例代码。</li>
+</ul>
+<p><a class="reference external" href="https://github.com/ricequant/rqalpha/blob/develop/rqalpha/examples/data_source/read_csv_as_df.py">read_csv_as_df</a></p>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">rqalpha.api</span> <span class="k">import</span> <span class="o">*</span>
+
+
+<span class="k">def</span> <span class="nf">read_csv_as_df</span><span class="p">(</span><span class="n">csv_path</span><span class="p">):</span>
+    <span class="c1"># 通过 pandas 读取 csv 文件，并生成 DataFrame</span>
+    <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">csv_path</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">data</span>
+
+
+<span class="k">def</span> <span class="nf">init</span><span class="p">(</span><span class="n">context</span><span class="p">):</span>
+    <span class="kn">import</span> <span class="nn">os</span>
+    <span class="c1"># 获取当前运行策略的文件路径</span>
+    <span class="n">strategy_file_path</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">strategy_file</span>
+    <span class="c1"># 根据当前策略的文件路径寻找到相对路径为 &quot;../IF1706_20161108.csv&quot; 的 csv 文件</span>
+    <span class="n">csv_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">strategy_file_path</span><span class="p">),</span> <span class="s2">&quot;../IF1706_20161108.csv&quot;</span><span class="p">)</span>
+    <span class="c1"># 读取 csv 文件并生成 df</span>
+    <span class="n">IF1706_df</span> <span class="o">=</span> <span class="n">read_csv_as_df</span><span class="p">(</span><span class="n">csv_path</span><span class="p">)</span>
+    <span class="c1"># 传入 context 中</span>
+    <span class="n">context</span><span class="o">.</span><span class="n">IF1706_df</span> <span class="o">=</span> <span class="n">IF1706_df</span>
+
+
+<span class="k">def</span> <span class="nf">before_trading</span><span class="p">(</span><span class="n">context</span><span class="p">):</span>
+    <span class="c1"># 通过context 获取在 init 阶段读取的 csv 文件数据</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">context</span><span class="o">.</span><span class="n">IF1706_df</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">handle_bar</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="n">bar</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+
+<span class="n">__config__</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;base&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;start_date&quot;</span><span class="p">:</span> <span class="s2">&quot;2015-01-09&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;end_date&quot;</span><span class="p">:</span> <span class="s2">&quot;2015-01-10&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;frequency&quot;</span><span class="p">:</span> <span class="s2">&quot;1d&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;matching_type&quot;</span><span class="p">:</span> <span class="s2">&quot;current_bar&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;benchmark&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="s2">&quot;accounts&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;future&quot;</span><span class="p">:</span> <span class="mi">1000000</span>
+        <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;extra&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;log_level&quot;</span><span class="p">:</span> <span class="s2">&quot;verbose&quot;</span><span class="p">,</span>
+    <span class="p">},</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="import">
+<h3>在策略中 import 自定义模块<a class="headerlink" href="#import" title="Permalink to this headline">¶</a></h3>
+<p>如果您定义了自定义模块，希望在策略中引用，只需要在初始化的时候将模块对应的路径添加到 <code class="code docutils literal notranslate"><span class="pre">sys.path</span></code> 即可，但需要关注如下两个注意事项:</p>
+<ul class="simple">
+<li>如果没有特殊原因，请在 <code class="code docutils literal notranslate"><span class="pre">init</span></code> 阶段添加 <code class="code docutils literal notranslate"><span class="pre">sys.path</span></code> 路径。</li>
+<li>如果您的自定义模块是基于策略策略的相对路径，则需要在 <code class="code docutils literal notranslate"><span class="pre">init</span></code> 函数中通过 <code class="code docutils literal notranslate"><span class="pre">context.config.base.strategy_file</span></code> 获取到策略路径，然后再添加到 <code class="code docutils literal notranslate"><span class="pre">sys.path</span></code> 中。</li>
+<li>RQAlpha 是读取策略代码并执行的，因此实际当前路径是执行 <cite>rqalpha</cite> 命令的路径，避免使用相对路径。</li>
+</ul>
+<p><a class="reference external" href="https://github.com/ricequant/rqalpha/blob/develop/rqalpha/examples/data_source/get_csv_module.py">get_csv_module</a></p>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">os</span>
+
+
+<span class="k">def</span> <span class="nf">read_csv_as_df</span><span class="p">(</span><span class="n">csv_path</span><span class="p">):</span>
+    <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">csv_path</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">data</span>
+
+
+<span class="k">def</span> <span class="nf">get_csv</span><span class="p">():</span>
+    <span class="n">csv_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">),</span> <span class="s2">&quot;../IF1706_20161108.csv&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">read_csv_as_df</span><span class="p">(</span><span class="n">csv_path</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><a class="reference external" href="https://github.com/ricequant/rqalpha/blob/develop/rqalpha/examples/data_source/import_get_csv_module.py">import_get_csv_module</a></p>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">rqalpha.api</span> <span class="k">import</span> <span class="o">*</span>
+
+
+<span class="k">def</span> <span class="nf">init</span><span class="p">(</span><span class="n">context</span><span class="p">):</span>
+    <span class="kn">import</span> <span class="nn">os</span>
+    <span class="kn">import</span> <span class="nn">sys</span>
+    <span class="n">strategy_file_path</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">strategy_file</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">realpath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">strategy_file_path</span><span class="p">)))</span>
+
+    <span class="kn">from</span> <span class="nn">get_csv_module</span> <span class="k">import</span> <span class="n">get_csv</span>
+
+    <span class="n">IF1706_df</span> <span class="o">=</span> <span class="n">get_csv</span><span class="p">()</span>
+    <span class="n">context</span><span class="o">.</span><span class="n">IF1706_df</span> <span class="o">=</span> <span class="n">IF1706_df</span>
+
+
+<span class="k">def</span> <span class="nf">before_trading</span><span class="p">(</span><span class="n">context</span><span class="p">):</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">context</span><span class="o">.</span><span class="n">IF1706_df</span><span class="p">)</span>
+
+
+<span class="n">__config__</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;base&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;start_date&quot;</span><span class="p">:</span> <span class="s2">&quot;2015-01-09&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;end_date&quot;</span><span class="p">:</span> <span class="s2">&quot;2015-01-10&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;frequency&quot;</span><span class="p">:</span> <span class="s2">&quot;1d&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;matching_type&quot;</span><span class="p">:</span> <span class="s2">&quot;current_bar&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;benchmark&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="s2">&quot;accounts&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;future&quot;</span><span class="p">:</span> <span class="mi">1000000</span>
+        <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;extra&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;log_level&quot;</span><span class="p">:</span> <span class="s2">&quot;verbose&quot;</span><span class="p">,</span>
+    <span class="p">},</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="api">
+<h3>扩展 API 实现自有数据的读取<a class="headerlink" href="#api" title="Permalink to this headline">¶</a></h3>
+<p>我们通过创建一个 Mod 来实现扩展 API，启动策略时，只需要开启该 Mod, 对应的扩展 API 便可以生效，在策略中直接使用。</p>
+<p><a class="reference external" href="https://github.com/ricequant/rqalpha/blob/develop/rqalpha/examples/extend_api/rqalpha_mod_extend_api_demo.py">rqalpha_mod_extend_api_demo</a></p>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">rqalpha.interface</span> <span class="k">import</span> <span class="n">AbstractMod</span>
+
+
+<span class="n">__config__</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;csv_path&quot;</span><span class="p">:</span> <span class="kc">None</span>
+<span class="p">}</span>
+
+
+<span class="k">def</span> <span class="nf">load_mod</span><span class="p">():</span>
+    <span class="k">return</span> <span class="n">ExtendAPIDemoMod</span><span class="p">()</span>
+
+
+<span class="k">class</span> <span class="nc">ExtendAPIDemoMod</span><span class="p">(</span><span class="n">AbstractMod</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># 注入API 一定要在初始化阶段，否则无法成功注入</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_csv_path</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_inject_api</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">start_up</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">env</span><span class="p">,</span> <span class="n">mod_config</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_csv_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">),</span> <span class="n">mod_config</span><span class="o">.</span><span class="n">csv_path</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">tear_down</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">code</span><span class="p">,</span> <span class="n">exception</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">_inject_api</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="kn">from</span> <span class="nn">rqalpha</span> <span class="k">import</span> <span class="n">export_as_api</span>
+        <span class="kn">from</span> <span class="nn">rqalpha.execution_context</span> <span class="k">import</span> <span class="n">ExecutionContext</span>
+        <span class="kn">from</span> <span class="nn">rqalpha.const</span> <span class="k">import</span> <span class="n">EXECUTION_PHASE</span>
+
+        <span class="nd">@export_as_api</span>
+        <span class="nd">@ExecutionContext</span><span class="o">.</span><span class="n">enforce_phase</span><span class="p">(</span><span class="n">EXECUTION_PHASE</span><span class="o">.</span><span class="n">ON_INIT</span><span class="p">,</span>
+                                        <span class="n">EXECUTION_PHASE</span><span class="o">.</span><span class="n">BEFORE_TRADING</span><span class="p">,</span>
+                                        <span class="n">EXECUTION_PHASE</span><span class="o">.</span><span class="n">ON_BAR</span><span class="p">,</span>
+                                        <span class="n">EXECUTION_PHASE</span><span class="o">.</span><span class="n">AFTER_TRADING</span><span class="p">,</span>
+                                        <span class="n">EXECUTION_PHASE</span><span class="o">.</span><span class="n">SCHEDULED</span><span class="p">)</span>
+        <span class="k">def</span> <span class="nf">get_csv_as_df</span><span class="p">():</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_csv_path</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">data</span>
+</pre></div>
+</div>
+<p>如上代码，我们定义了 <code class="code docutils literal notranslate"><span class="pre">rqalpha_mod_extend_api_demo</span></code> Mod，该 Mod 接受一个参数: <code class="code docutils literal notranslate"><span class="pre">csv_path</span></code>， 其会转换为基于 Mod 的相对路径来获取对应的 csv 地址。</p>
+<p>在该Mod中通过 <code class="code docutils literal notranslate"><span class="pre">_inject_api</span></code> 方法，定义了 <code class="code docutils literal notranslate"><span class="pre">get_csv_ad_df</span></code> 函数，并通过 <code class="code docutils literal notranslate"><span class="pre">from</span> <span class="pre">rqalpha</span> <span class="pre">import</span> <span class="pre">export_as_api</span></code> 装饰器完成了 API 的注入。</p>
+<p>如果想限制扩展API所运行使用的范围，可以通过 <code class="code docutils literal notranslate"><span class="pre">ExecutionContext.enforce_phase</span></code> 来控制.</p>
+<p>接下来我们看一下如何在策略中使用该扩展API:</p>
+<p><a class="reference external" href="https://github.com/ricequant/rqalpha/blob/develop/rqalpha/examples/extend_api/test_extend_api.py">test_extend_api</a></p>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">rqalpha.api</span> <span class="k">import</span> <span class="o">*</span>
+
+
+<span class="k">def</span> <span class="nf">init</span><span class="p">(</span><span class="n">context</span><span class="p">):</span>
+    <span class="n">IF1706_df</span> <span class="o">=</span> <span class="n">get_csv_as_df</span><span class="p">()</span>
+    <span class="n">context</span><span class="o">.</span><span class="n">IF1706_df</span> <span class="o">=</span> <span class="n">IF1706_df</span>
+
+
+<span class="k">def</span> <span class="nf">before_trading</span><span class="p">(</span><span class="n">context</span><span class="p">):</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">context</span><span class="o">.</span><span class="n">IF1706_df</span><span class="p">)</span>
+
+
+<span class="n">__config__</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;base&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;start_date&quot;</span><span class="p">:</span> <span class="s2">&quot;2015-01-09&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;end_date&quot;</span><span class="p">:</span> <span class="s2">&quot;2015-01-10&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;frequency&quot;</span><span class="p">:</span> <span class="s2">&quot;1d&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;matching_type&quot;</span><span class="p">:</span> <span class="s2">&quot;current_bar&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;benchmark&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="s2">&quot;accounts&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;future&quot;</span><span class="p">:</span> <span class="mi">1000000</span>
+        <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;extra&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;log_level&quot;</span><span class="p">:</span> <span class="s2">&quot;verbose&quot;</span><span class="p">,</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;mod&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;extend_api_demo&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;enabled&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">&quot;lib&quot;</span><span class="p">:</span> <span class="s2">&quot;rqalpha.examples.extend_api.rqalpha_mod_extend_api_demo&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;csv_path&quot;</span><span class="p">:</span> <span class="s2">&quot;../IF1706_20161108.csv&quot;</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>如上述代码，首先配置信息中添加 <cite>extend_api_demo</cite> 对应的配置</p>
+<ul class="simple">
+<li><code class="code docutils literal notranslate"><span class="pre">enabled</span></code>: True 表示开启该 Mod</li>
+<li><code class="code docutils literal notranslate"><span class="pre">lib</span></code>: 指定该 Mod 对应的加载位置(rqlalpha 会自动去寻找 <cite>rqalpha_mod_xxx</cite> 对应的库，如果该库已经通过 <cite>pip install</cite> 安装，则无需显式指定 lib)</li>
+<li><code class="code docutils literal notranslate"><span class="pre">csv_path</span></code>： 指定 csv 所在位置</li>
+</ul>
+<p>至此，我们就可以直接在策略中使用 <cite>get_csv_as_df</cite> 函数了。</p>
+</div>
+</div>
+<div class="section" id="id4">
+<h2>替换已有数据源<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id5">
+<h3>基础数据<a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h3>
+<p>通过 <cite>$ rqalpha update-bundle</cite> 下载的数据有如下文件：</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ <span class="nb">cd</span> ~/.rqalpha/bundle <span class="p">&amp;</span> tree -A -d -L <span class="m">1</span>
+
+.
+├── adjusted_dividends.bcolz
+├── funds.bcolz
+├── futures.bcolz
+├── indexes.bcolz
+├── original_dividends.bcolz
+├── st_stock_days.bcolz
+├── stocks.bcolz
+├── suspended_days.bcolz
+├── trading_dates.bcolz
+└── yield_curve.bcolz
+</pre></div>
+</div>
+<p>目前基础数据，比如 <cite>Instruments</cite>, <cite>st_stocks</cite>, <cite>suspended_days</cite>, <cite>trading_dates</cite> 都是全量数据，并且可以通过 <cite>$ rqalpha update-bundle</cite> 每天更新，因此没有相应的显式接口可以对其进行替换。</p>
+<p>您如果想要替换，可以使用如下两种方式:</p>
+<ul class="simple">
+<li>写脚本将自有数据源按照相同的格式生成对应的文件，并进行文件替换。</li>
+<li>实现 <a class="reference external" href="http://rqalpha.io/zh_CN/latest/development/basic_concept.html#datasource">AbstractDataSource</a> 对应的接口，您可以继承 <a class="reference external" href="https://github.com/ricequant/rqalpha/blob/develop/rqalpha/data/base_data_source.py">BaseDataSource</a> 并 override 对应的接口即可完成替换。</li>
+</ul>
+</div>
+<div class="section" id="tushare">
+<h3>行情数据 - 五十行代码接入 tushare 行情数据<a class="headerlink" href="#tushare" title="Permalink to this headline">¶</a></h3>
+<p>RQAlpha 支持自定义扩展数据源。得益于 RQAlpha 的 mod 机制，我们可以很方便的替换或者扩展默认的数据接口。</p>
+<p>RQAlpha 将提供给用户的数据 API 和回测所需的基础数据抽象成了若干个函数，这些函数被封于 <code class="xref py py-class docutils literal notranslate"><span class="pre">DataSource</span></code> 类中，并将在需要的时候被调用。简单的说，我们只需要在自己定义的 mod 中扩展或重写默认的 <code class="xref py py-class docutils literal notranslate"><span class="pre">DataSource</span></code> 类，就可以替换掉默认的数据源，接入自有数据。</p>
+<p><code class="xref py py-class docutils literal notranslate"><span class="pre">DataSource</span></code> 类的完整文档，请参阅 <a class="reference internal" href="basic_concept.html#development-basic-concept"><span class="std std-ref">基本概念</span></a>。下面将用一个简单的例子，为大家介绍如何用五十行左右的代码将默认的行情数据替换为 <a class="reference external" href="http://tushare.org">TuShare</a> 的行情数据。</p>
+<p>TushareKDataMod 的作用是使用 tushare 提供的k线数据替换 data_bundle 中的行情数据，由于目前 tushare 仅仅开放了日线、周线和月线的历史数据，所以该 mod 仍然只能提供日回测的功能，若未来 tushare 开放了60分钟或5分钟线的历史数据，只需进行简单修改，便可通过该 mod 使 RQAlpha 实现5分钟回测。</p>
+<p>开工前，首先熟悉一下用到的 tushare 的k线接口，接口如下：</p>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="n">get_k_data</span><span class="p">(</span><span class="n">code</span><span class="p">,</span> <span class="n">ktype</span><span class="o">=</span><span class="s1">&#39;D&#39;</span><span class="p">,</span> <span class="n">autype</span><span class="o">=</span><span class="s1">&#39;qfq&#39;</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>如上文所说，我们要做的主要就是扩展或重写默认的 DataSource 类。在此处，我们选择建立一个新的 DataSource 类，该类继承于默认的 <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseDataSource</span></code> 类。</p>
+<p>这样做的好处在于我们不必重写 DataSource 需要实现的所有函数，而可以只实现与我们想替换的数据源相关的函数，其他数据的获取直接甩锅给父类 <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseDataSource</span></code> 。</p>
+<p>与行情数据密切相关的主要有以下三个函数：</p>
+<ul class="simple">
+<li><code class="code docutils literal notranslate"><span class="pre">current_snapshot(instrument,</span> <span class="pre">frequency,</span> <span class="pre">dt)</span></code></li>
+<li><code class="code docutils literal notranslate"><span class="pre">get_bar(instrument,</span> <span class="pre">dt,</span> <span class="pre">frequency)</span></code></li>
+<li><code class="code docutils literal notranslate"><span class="pre">history_bars(instrument,</span> <span class="pre">bar_count,</span> <span class="pre">frequency,</span> <span class="pre">fields,</span> <span class="pre">dt,</span> <span class="pre">skip_suspended=True)</span></code></li>
+<li><code class="code docutils literal notranslate"><span class="pre">available_data_range(frequency)</span></code></li>
+</ul>
+<p>经过查看 <code class="xref py py-class docutils literal notranslate"><span class="pre">DataProxy</span></code> 类的源代码，可以发现，提供日级别数据的 DataSource 类不需要实现 <code class="code docutils literal notranslate"><span class="pre">current_snapshot</span></code> 函数，所以我们只关注后三个函数的实现。</p>
+<p><code class="code docutils literal notranslate"><span class="pre">get_bar</span></code> 和 <code class="code docutils literal notranslate"><span class="pre">history_bars</span></code> 函数实现的主要功能都是传入 instrument 对象，从 tushare 获取指定时间或时间段的 bar 数据。我们把这一过程抽象为一个函数:</p>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">TushareKDataSource</span><span class="p">(</span><span class="n">BaseDataSource</span><span class="p">):</span>
+
+<span class="o">...</span>
+
+<span class="nd">@staticmethod</span>
+<span class="k">def</span> <span class="nf">get_tushare_k_data</span><span class="p">(</span><span class="n">instrument</span><span class="p">,</span> <span class="n">start_dt</span><span class="p">,</span> <span class="n">end_dt</span><span class="p">):</span>
+
+    <span class="c1"># 首先获取 order_book_id 并将其转换为 tushare 所能识别的 code</span>
+    <span class="n">order_book_id</span> <span class="o">=</span> <span class="n">instrument</span><span class="o">.</span><span class="n">order_book_id</span>
+    <span class="n">code</span> <span class="o">=</span> <span class="n">order_book_id</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="c1"># tushare 行情数据目前仅支持股票和指数，并通过 index 参数进行区分</span>
+    <span class="k">if</span> <span class="n">instrument</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s1">&#39;CS&#39;</span><span class="p">:</span>
+        <span class="n">index</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">elif</span> <span class="n">instrument</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s1">&#39;INDX&#39;</span><span class="p">:</span>
+        <span class="n">index</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="c1"># 调用 tushare 函数，注意 datetime 需要转为指定格式的 str</span>
+    <span class="k">return</span> <span class="n">ts</span><span class="o">.</span><span class="n">get_k_data</span><span class="p">(</span><span class="n">code</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">index</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">start_dt</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1">&#39;</span><span class="p">),</span> <span class="n">end</span><span class="o">=</span><span class="n">end_dt</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1">&#39;</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>现在实现 <code class="code docutils literal notranslate"><span class="pre">get_bar</span></code> 函数：</p>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">TushareKDataSource</span><span class="p">(</span><span class="n">BaseDataSource</span><span class="p">):</span>
+
+    <span class="o">...</span>
+
+    <span class="k">def</span> <span class="nf">get_bar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instrument</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">frequency</span><span class="p">):</span>
+
+        <span class="c1"># tushare k线数据暂时只能支持日级别的回测，其他情况甩锅给默认数据源</span>
+        <span class="k">if</span> <span class="n">frequency</span> <span class="o">!=</span> <span class="s1">&#39;1d&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">TushareKDataSource</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">get_bar</span><span class="p">(</span><span class="n">instrument</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">frequency</span><span class="p">)</span>
+
+        <span class="c1"># 调用上边写好的函数获取k线数据</span>
+        <span class="n">bar_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_tushare_k_data</span><span class="p">(</span><span class="n">instrument</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">dt</span><span class="p">)</span>
+
+        <span class="c1"># 遇到获取不到数据的情况，同样甩锅；若有返回值，注意转换格式。</span>
+        <span class="k">if</span> <span class="n">bar_data</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">bar_data</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">TushareKDataSource</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">get_bar</span><span class="p">(</span><span class="n">instrument</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">frequency</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">bar_data</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>然后是硬骨头 <code class="code docutils literal notranslate"><span class="pre">history_bars</span></code> 函数：</p>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">TushareKDataSource</span><span class="p">(</span><span class="n">BaseDataSource</span><span class="p">):</span>
+
+    <span class="o">...</span>
+
+    <span class="k">def</span> <span class="nf">history_bars</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instrument</span><span class="p">,</span> <span class="n">bar_count</span><span class="p">,</span> <span class="n">frequency</span><span class="p">,</span> <span class="n">fields</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">skip_suspended</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="c1"># tushare 的k线数据未对停牌日期做补齐，所以遇到不跳过停牌日期的情况我们先甩锅。有兴趣的开发者欢迎提交代码补齐停牌日数据。</span>
+        <span class="k">if</span> <span class="n">frequency</span> <span class="o">!=</span> <span class="s1">&#39;1d&#39;</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">skip_suspended</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">TushareKDataSource</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">history_bars</span><span class="p">(</span><span class="n">instrument</span><span class="p">,</span> <span class="n">bar_count</span><span class="p">,</span> <span class="n">frequency</span><span class="p">,</span> <span class="n">fields</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">skip_suspended</span><span class="p">)</span>
+
+        <span class="c1"># 参数只提供了截止日期和天数，我们需要自己找到开始日期</span>
+        <span class="c1"># 获取交易日列表，并拿到截止日期在列表中的索引，之后再算出开始日期的索引</span>
+        <span class="n">start_dt_loc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_trading_calendar</span><span class="p">()</span><span class="o">.</span><span class="n">get_loc</span><span class="p">(</span><span class="n">dt</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">hour</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">minute</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">second</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">microsecond</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span> <span class="o">-</span> <span class="n">bar_count</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="c1"># 根据索引拿到开始日期</span>
+        <span class="n">start_dt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_trading_calendar</span><span class="p">()[</span><span class="n">start_dt_loc</span><span class="p">]</span>
+
+        <span class="c1"># 调用上边写好的函数获取k线数据</span>
+        <span class="n">bar_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_tushare_k_data</span><span class="p">(</span><span class="n">instrument</span><span class="p">,</span> <span class="n">start_dt</span><span class="p">,</span> <span class="n">dt</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">bar_data</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">bar_data</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">TushareKDataSource</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">get_bar</span><span class="p">(</span><span class="n">instrument</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">frequency</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># 注意传入的 fields 参数可能会有不同的数据类型</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">fields</span><span class="p">,</span> <span class="n">six</span><span class="o">.</span><span class="n">string_types</span><span class="p">):</span>
+                <span class="n">fields</span> <span class="o">=</span> <span class="p">[</span><span class="n">fields</span><span class="p">]</span>
+            <span class="n">fields</span> <span class="o">=</span> <span class="p">[</span><span class="n">field</span> <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">fields</span> <span class="k">if</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">bar_data</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span>
+
+            <span class="c1"># 这样转换格式会导致返回值的格式与默认 DataSource 中该方法的返回值格式略有不同。欢迎有兴趣的开发者提交代码进行修改。</span>
+            <span class="k">return</span> <span class="n">bar_data</span><span class="p">[</span><span class="n">fields</span><span class="p">]</span><span class="o">.</span><span class="n">as_matrix</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>最后是 <code class="code docutils literal notranslate"><span class="pre">available_data_range</span></code> 函数</p>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">TushareKDataSource</span><span class="p">(</span><span class="n">BaseDataSource</span><span class="p">):</span>
+
+    <span class="o">...</span>
+
+    <span class="k">def</span> <span class="nf">available_data_range</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">frequency</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">date</span><span class="p">(</span><span class="mi">2005</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">date</span><span class="o">.</span><span class="n">today</span><span class="p">()</span> <span class="o">-</span> <span class="n">relativedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>把以上几个函数组合起来，并加入构造函数，就完成了我们重写的 DataSource 类。完整代码如下：</p>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">six</span>
+<span class="kn">import</span> <span class="nn">tushare</span> <span class="k">as</span> <span class="nn">ts</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="k">import</span> <span class="n">date</span>
+<span class="kn">from</span> <span class="nn">dateutil.relativedelta</span> <span class="k">import</span> <span class="n">relativedelta</span>
+<span class="kn">from</span> <span class="nn">rqalpha.data.base_data_source</span> <span class="k">import</span> <span class="n">BaseDataSource</span>
+
+
+<span class="k">class</span> <span class="nc">TushareKDataSource</span><span class="p">(</span><span class="n">BaseDataSource</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">TushareKDataSource</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">get_tushare_k_data</span><span class="p">(</span><span class="n">instrument</span><span class="p">,</span> <span class="n">start_dt</span><span class="p">,</span> <span class="n">end_dt</span><span class="p">):</span>
+        <span class="n">order_book_id</span> <span class="o">=</span> <span class="n">instrument</span><span class="o">.</span><span class="n">order_book_id</span>
+        <span class="n">code</span> <span class="o">=</span> <span class="n">order_book_id</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">instrument</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s1">&#39;CS&#39;</span><span class="p">:</span>
+            <span class="n">index</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">elif</span> <span class="n">instrument</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s1">&#39;INDX&#39;</span><span class="p">:</span>
+            <span class="n">index</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="k">return</span> <span class="n">ts</span><span class="o">.</span><span class="n">get_k_data</span><span class="p">(</span><span class="n">code</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">index</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">start_dt</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1">&#39;</span><span class="p">),</span> <span class="n">end</span><span class="o">=</span><span class="n">end_dt</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1">&#39;</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">get_bar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instrument</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">frequency</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">frequency</span> <span class="o">!=</span> <span class="s1">&#39;1d&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">TushareKDataSource</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">get_bar</span><span class="p">(</span><span class="n">instrument</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">frequency</span><span class="p">)</span>
+
+        <span class="n">bar_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_tushare_k_data</span><span class="p">(</span><span class="n">instrument</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">dt</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">bar_data</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">bar_data</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">TushareKDataSource</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">get_bar</span><span class="p">(</span><span class="n">instrument</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">frequency</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">bar_data</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">history_bars</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instrument</span><span class="p">,</span> <span class="n">bar_count</span><span class="p">,</span> <span class="n">frequency</span><span class="p">,</span> <span class="n">fields</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">skip_suspended</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">frequency</span> <span class="o">!=</span> <span class="s1">&#39;1d&#39;</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">skip_suspended</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">TushareKDataSource</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">history_bars</span><span class="p">(</span><span class="n">instrument</span><span class="p">,</span> <span class="n">bar_count</span><span class="p">,</span> <span class="n">frequency</span><span class="p">,</span> <span class="n">fields</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">skip_suspended</span><span class="p">)</span>
+
+        <span class="n">start_dt_loc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_trading_calendar</span><span class="p">()</span><span class="o">.</span><span class="n">get_loc</span><span class="p">(</span><span class="n">dt</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">hour</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">minute</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">second</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">microsecond</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span> <span class="o">-</span> <span class="n">bar_count</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="n">start_dt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_trading_calendar</span><span class="p">()[</span><span class="n">start_dt_loc</span><span class="p">]</span>
+
+        <span class="n">bar_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_tushare_k_data</span><span class="p">(</span><span class="n">instrument</span><span class="p">,</span> <span class="n">start_dt</span><span class="p">,</span> <span class="n">dt</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">bar_data</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">bar_data</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">TushareKDataSource</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">get_bar</span><span class="p">(</span><span class="n">instrument</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">frequency</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">fields</span><span class="p">,</span> <span class="n">six</span><span class="o">.</span><span class="n">string_types</span><span class="p">):</span>
+                <span class="n">fields</span> <span class="o">=</span> <span class="p">[</span><span class="n">fields</span><span class="p">]</span>
+            <span class="n">fields</span> <span class="o">=</span> <span class="p">[</span><span class="n">field</span> <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">fields</span> <span class="k">if</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">bar_data</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span>
+
+            <span class="k">return</span> <span class="n">bar_data</span><span class="p">[</span><span class="n">fields</span><span class="p">]</span><span class="o">.</span><span class="n">as_matrix</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">available_data_range</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">frequency</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">date</span><span class="p">(</span><span class="mi">2005</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">date</span><span class="o">.</span><span class="n">today</span><span class="p">()</span> <span class="o">-</span> <span class="n">relativedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>到目前为止，我们的主要工作已经完成了。想要将我们刚刚写好的 DataSource 类投入使用，还需要将其放入一个 mod 来被 RQAlpha 加载。</p>
+<p>mod 的实现如下：</p>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">rqalpha.interface</span> <span class="k">import</span> <span class="n">AbstractMod</span>
+
+<span class="kn">from</span> <span class="nn">.data_source</span> <span class="k">import</span> <span class="n">TushareKDataSource</span>
+
+
+<span class="k">class</span> <span class="nc">TushareKDataMode</span><span class="p">(</span><span class="n">AbstractMod</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">start_up</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">env</span><span class="p">,</span> <span class="n">mod_config</span><span class="p">):</span>
+        <span class="c1"># 设置 data_source 为 TushareKDataSource 类的对象</span>
+        <span class="n">env</span><span class="o">.</span><span class="n">set_data_source</span><span class="p">(</span><span class="n">TushareKDataSource</span><span class="p">(</span><span class="n">env</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">data_bundle_path</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">tear_down</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">code</span><span class="p">,</span> <span class="n">exception</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">pass</span>
+</pre></div>
+</div>
+<p>最后的最后，添加 <code class="code docutils literal notranslate"><span class="pre">load_mod</span></code> 函数，该函数将被 RQAlpha 调用以加载我们刚刚写好的 mod 。</p>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">.mod</span> <span class="k">import</span> <span class="n">TushareKDataMode</span>
+
+
+<span class="k">def</span> <span class="nf">load_mod</span><span class="p">():</span>
+    <span class="k">return</span> <span class="n">TushareKDataMode</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>至此，我们已经完成了外部行情数据的接入，剩下要做的就是在 RQAlpha 启动时传入的配置信息中开启以上 mod。</p>
+<p>该 mod 只是一个简单的 demo，仍存在一些问题，例如调用 tushare 接口速度较慢，频繁调用会消耗大量时间。如能将多次调用合并，或是将接口的调用改为异步，相信能够大幅提升回测速度。</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">扩展数据源</a><ul>
+<li><a class="reference internal" href="#id2">增加自有数据源</a><ul>
+<li><a class="reference internal" href="#id3">策略中直接读取自有数据</a></li>
+<li><a class="reference internal" href="#import">在策略中 import 自定义模块</a></li>
+<li><a class="reference internal" href="#api">扩展 API 实现自有数据的读取</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id4">替换已有数据源</a><ul>
+<li><a class="reference internal" href="#id5">基础数据</a></li>
+<li><a class="reference internal" href="#tushare">行情数据 - 五十行代码接入 tushare 行情数据</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="event_source.html"
+                        title="previous chapter">扩展事件源</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="collecting_logs.html"
+                        title="next chapter">收集策略日志</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/development/data_source.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="collecting_logs.html" title="收集策略日志"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="event_source.html" title="扩展事件源"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">CNICPortofolio 0.0 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+        &#169; Copyright .
+      Last updated on Sep 06, 2019.
+    </div>
+<script type="text/javascript">
+    console.log("RQAlpha Powered By RiceQuant.");
+</script>
+
+  </body>
+</html>

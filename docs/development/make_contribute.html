@@ -1,0 +1,172 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>如何贡献代码 &#8212; CNICPortofolio 0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="基本概念" href="basic_concept.html" />
+    <link rel="prev" title="参数调优" href="../intro/optimizing_parameters.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="basic_concept.html" title="基本概念"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../intro/optimizing_parameters.html" title="参数调优"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">CNICPortofolio 0.0 documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="development-make-contribute">
+<span id="id1"></span><h1>如何贡献代码<a class="headerlink" href="#development-make-contribute" title="Permalink to this headline">¶</a></h1>
+<p>RQAlpha 是一个持续更新和维护的项目，它支持 <a class="reference external" href="https://www.ricequant.com/algorithms">Ricequant</a> 平台的策略回测、实盘交易，因此合并代码是一件非常严谨的事情，这并不意味着我们不希望接受来自开源社区的贡献，反之，我们更愿意拥抱开源，加快产品的迭代、功能的完善、问题的修复。如果您愿意加入进来，共同维护和开发 RQAlpha，请阅读以下文档，希望以下内容可以解答您的疑惑，给您带来帮助。</p>
+<p>RQAlpha 所有的开发工作都将会在 <a class="reference external" href="https://github.com/ricequant/rqalpha">RQAlpha Github</a> 上进行，无论是 团队成员还是个人贡献者都需要以同样的方式进行代码提交。</p>
+<div class="section" id="development-make-contribute-branch-management">
+<span id="id2"></span><h2>分支管理<a class="headerlink" href="#development-make-contribute-branch-management" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference external" href="https://github.com/ricequant/rqalpha">master 分支</a> 为最新稳定版本，只有团队成员在发布新版本时才会将充分测试的 <a class="reference external" href="https://github.com/ricequant/rqalpha/tree/develop">develop 分支</a> 合并到 <a class="reference external" href="https://github.com/ricequant/rqalpha">master 分支</a> 中。</p>
+<p><a class="reference external" href="https://github.com/ricequant/rqalpha/tree/develop">develop 分支</a> 为最新开发版本，提交代码需要保证通过所有的测试。</p>
+<p>如果是修复bug，需要额外创建 <cite>bug/xxx</cite> 分支来进行代码提交，测试通过后提交 pull request 并等待 team member 的 merge check.</p>
+<p>如果是增加feature, 需要额外创建 <cite>feature/xxx</cite> 分支来进行代码提交，并完善文档和测试脚本，测试通过后提交 pull request 并等待 team member 的 merge check.</p>
+</div>
+<div class="section" id="bugs">
+<h2>Bugs<a class="headerlink" href="#bugs" title="Permalink to this headline">¶</a></h2>
+<p>如果您在使用的过程中发现了Bug, 请通过 <cite>https://github.com/ricequant/rqalpha/issues</cite> 来提交并描述相关的问题，您也可以在这里查看其它的issue，通过解决这些issue来贡献代码。</p>
+</div>
+<div class="section" id="pull-request">
+<h2>Pull Request<a class="headerlink" href="#pull-request" title="Permalink to this headline">¶</a></h2>
+<p>如果您是第一次通过 <cite>Pull Request</cite> 提交代码， 您可以参考 <a class="reference external" href="https://egghead.io/series/how-to-contribute-to-an-open-source-project-on-github">How to Contribute to an Open Source Project on GitHub</a> 来了解 Contribute Workflow.</p>
+<p>我们会认真审核您的 <cite>Pull Request</cite>, 并给出如下三种回应:</p>
+<ul class="simple">
+<li><cite>Merge Pull Request</cite> : 合并您的代码进入 <a class="reference external" href="https://github.com/ricequant/rqalpha/tree/develop">develop 分支</a></li>
+<li><cite>Pending</cite> : 如果发现有一些地方还需要完善，我们会给出具体的完善建议，并等待您的进一步提交。</li>
+<li><cite>Won’t Merge</cite> : 如果发现您的 <cite>Pull Request</cite> 不适合合并，我们会给出具体的解释，并关闭相应的issue。</li>
+</ul>
+</div>
+<div class="section" id="contribute-workflow">
+<h2>Contribute Workflow<a class="headerlink" href="#contribute-workflow" title="Permalink to this headline">¶</a></h2>
+<p>在提交 <cite>Pull Request</cite> 前，请确保您是按照如下流程进行代码的开发和测试的:</p>
+<ol class="arabic simple">
+<li>Fork <a class="reference external" href="https://github.com/ricequant/rqalpha">RQAlpha Github</a></li>
+<li>基于 <a class="reference external" href="https://github.com/ricequant/rqalpha/tree/develop">develop 分支</a> 创建新的分支，分支命名需要遵循 <a class="reference internal" href="#development-make-contribute-branch-management"><span class="std std-ref">分支管理</span></a> 中的命名规则。</li>
+<li>如果您修改了代码，请保证通过测试。</li>
+<li>如果您修改了API, 请保证文档也同时更新。</li>
+<li>如果您增加了新的功能，请保证增加测试代码，</li>
+</ol>
+</div>
+<div class="section" id="development-workflow">
+<h2>Development Workflow<a class="headerlink" href="#development-workflow" title="Permalink to this headline">¶</a></h2>
+<p>To Be Continued</p>
+</div>
+<div class="section" id="style-guide">
+<h2>Style Guide<a class="headerlink" href="#style-guide" title="Permalink to this headline">¶</a></h2>
+<p>PEP8</p>
+</div>
+<div class="section" id="license">
+<h2>License<a class="headerlink" href="#license" title="Permalink to this headline">¶</a></h2>
+<p>Apache License 2.0</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">如何贡献代码</a><ul>
+<li><a class="reference internal" href="#development-make-contribute-branch-management">分支管理</a></li>
+<li><a class="reference internal" href="#bugs">Bugs</a></li>
+<li><a class="reference internal" href="#pull-request">Pull Request</a></li>
+<li><a class="reference internal" href="#contribute-workflow">Contribute Workflow</a></li>
+<li><a class="reference internal" href="#development-workflow">Development Workflow</a></li>
+<li><a class="reference internal" href="#style-guide">Style Guide</a></li>
+<li><a class="reference internal" href="#license">License</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="../intro/optimizing_parameters.html"
+                        title="previous chapter">参数调优</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="basic_concept.html"
+                        title="next chapter">基本概念</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/development/make_contribute.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="basic_concept.html" title="基本概念"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../intro/optimizing_parameters.html" title="参数调优"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">CNICPortofolio 0.0 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+        &#169; Copyright .
+      Last updated on Sep 06, 2019.
+    </div>
+<script type="text/javascript">
+    console.log("RQAlpha Powered By RiceQuant.");
+</script>
+
+  </body>
+</html>

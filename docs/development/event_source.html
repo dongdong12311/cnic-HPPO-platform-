@@ -1,0 +1,371 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>扩展事件源 &#8212; CNICPortofolio 0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="扩展数据源" href="data_source.html" />
+    <link rel="prev" title="Mod" href="mod.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="data_source.html" title="扩展数据源"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="mod.html" title="Mod"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">CNICPortofolio 0.0 documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="development-event-source">
+<span id="id1"></span><h1>扩展事件源<a class="headerlink" href="#development-event-source" title="Permalink to this headline">¶</a></h1>
+<p>了解事件，首先要从 RQAlpha 的事件驱动说起。</p>
+<p>RQAlpha 大部分的组件是以 <code class="code docutils literal notranslate"><span class="pre">add_listener</span></code> 的方式进行事件的注册。举例来说:</p>
+<ul class="simple">
+<li>当Bar数据生成，则会触发 <code class="code docutils literal notranslate"><span class="pre">EVENT.BAR</span></code> 事件，那么用户的 <code class="code docutils literal notranslate"><span class="pre">handle_bar</span></code> 相关的代码注册了该事件则会立即执行。</li>
+<li>当订单成交，则会触发 <code class="code docutils literal notranslate"><span class="pre">EVENT.TRADE</span></code> 事件，那么系统的账户模块因为注册了该事件，就可以立即计算成交以后的收益和资金变化。</li>
+<li>当订单下单，则会触发 <code class="code docutils literal notranslate"><span class="pre">EVENT.ORDER_PENDING_NEW</span></code> 事件，前端风控模块注册了该事件，则可以立即对该订单进行审核，如果不满足风控要求，则直接指定执行 <code class="code docutils literal notranslate"><span class="pre">order._cancel(some_reason)</span></code> 来保证有问题的订单不会进入实际下单环节。</li>
+</ul>
+<p>程序化交易中很多需求，都可以通过注册事件的方式无缝插入到 RQAlpha 中进行扩展。</p>
+<div class="section" id="id2">
+<h2>事件源分类<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>SystemEvent: 系统事件源<ul>
+<li>POST_SYSTEM_INIT: 系统初始化后触发</li>
+<li>POST_USER_INIT: 策略的 <code class="code docutils literal notranslate"><span class="pre">init</span></code> 函数执行后触发</li>
+<li>POST_SYSTEM_RESTORED: 在实盘时，你可能需要在此事件后根据其他信息源对系统状态进行调整</li>
+</ul>
+</li>
+<li>MarketEvent: 市场及数据事件源<ul>
+<li>POST_UNIVERSE_CHANGED: 策略证券池发生变化后触发</li>
+<li>PRE_BEFORE_TRADING: 执行 <code class="code docutils literal notranslate"><span class="pre">before_trading</span></code> 函数前触发</li>
+<li>BEFORE_TRADING: 该事件会触发策略的 <code class="code docutils literal notranslate"><span class="pre">before_trading</span></code> 函数</li>
+<li>POST_BEFORE_TRADING: 执行 <code class="code docutils literal notranslate"><span class="pre">before_trading</span></code> 函数后触发</li>
+<li>PRE_BAR: 执行 <code class="code docutils literal notranslate"><span class="pre">handle_bar</span></code> 函数前触发</li>
+<li>BAR: 该事件会触发策略的 <code class="code docutils literal notranslate"><span class="pre">handle_bar</span></code> 函数</li>
+<li>POST_BAR: 执行 <code class="code docutils literal notranslate"><span class="pre">handle_bar</span></code> 函数后触发</li>
+<li>PRE_TICK: 执行 <code class="code docutils literal notranslate"><span class="pre">handle_tick</span></code> 前触发</li>
+<li>TICK: 该事件会触发策略的 <code class="code docutils literal notranslate"><span class="pre">handle_tick</span></code> 函数</li>
+<li>POST_TICK: 执行 <code class="code docutils literal notranslate"><span class="pre">handle_tick</span></code> 后触发</li>
+<li>PRE_SCHEDULED: 在 <code class="code docutils literal notranslate"><span class="pre">scheduler</span></code> 执行前触发</li>
+<li>POST_SCHEDULED: 在 <code class="code docutils literal notranslate"><span class="pre">scheduler</span></code> 执行后触发</li>
+<li>PRE_AFTER_TRADING: 执行 <code class="code docutils literal notranslate"><span class="pre">after_trading</span></code> 函数前触发</li>
+<li>AFTER_TRADING: 该事件会触发策略的 <code class="code docutils literal notranslate"><span class="pre">after_trading</span></code> 函数</li>
+<li>POST_AFTER_TRADING: 执行 <code class="code docutils literal notranslate"><span class="pre">after_trading</span></code> 函数后触发</li>
+<li>PRE_SETTLEMENT: 结算前触发该事件</li>
+<li>SETTLEMENT: 触发结算事件</li>
+<li>POST_SETTLEMENT: 结算后触发该事件</li>
+</ul>
+</li>
+<li>OrderEvent: 交易事件源<ul>
+<li>ORDER_PENDING_NEW: 创建订单</li>
+<li>ORDER_CREATION_PASS: 创建订单成功</li>
+<li>ORDER_CREATION_REJECT: 创建订单失败</li>
+<li>ORDER_PENDING_CANCEL: 创建撤单</li>
+<li>ORDER_CANCELLATION_PASS: 撤销订单成功</li>
+<li>ORDER_CANCELLATION_REJECT: 撤销订单失败</li>
+<li>ORDER_UNSOLICITED_UPDATE: 订单状态更新</li>
+<li>TRADE: 成交</li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="id3">
+<h2>事件源的订阅及使用<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h2>
+<p>我们可以订阅需要的事件源，从而在该事件发生时实现指定需求。</p>
+<p>下面以最简单的 Mod - ProgressMod 为例，介绍事件源的订阅和使用。</p>
+<p>ProgressMod 需要实现的需求非常的简单：在命令行输出目前回测的进度条。</p>
+<img alt="https://raw.githubusercontent.com/ricequant/rq-resource/master/rqalpha/progress_bar.png" src="https://raw.githubusercontent.com/ricequant/rq-resource/master/rqalpha/progress_bar.png" />
+<p>首先定义一个 ProgressMod 类，继承与接口类 <code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractMod</span></code></p>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">rqalpha.interface</span> <span class="k">import</span> <span class="n">AbstractMod</span>
+
+<span class="k">class</span> <span class="nc">ProgressMod</span><span class="p">(</span><span class="n">AbstractMod</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">start_up</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">env</span><span class="p">,</span> <span class="n">mod_config</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        RQAlpha 在系统启动时会调用此接口；在此接口中，可以通过调用 ``env`` 的相应方法来覆盖系统默认组件。</span>
+
+<span class="sd">        :param env: 系统环境</span>
+<span class="sd">        :type env: :class:`~Environment`</span>
+<span class="sd">        :param mod_config: 模块配置参数</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">tear_down</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">success</span><span class="p">,</span> <span class="n">exception</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        RQAlpha 在系统退出前会调用此接口。</span>
+
+<span class="sd">        :param code: 退出代码</span>
+<span class="sd">        :type code: rqalpha.const.EXIT_CODE</span>
+<span class="sd">        :param exception: 如果在策略执行过程中出现错误，此对象为相应的异常对象</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+</pre></div>
+</div>
+<p>我们将需求进行分拆:</p>
+<ul class="simple">
+<li>在回测开始时初始化进度条</li>
+<li>在回测每日交易结束后更新进度条</li>
+<li>在回测结束后，终止进度条</li>
+</ul>
+<p>为了实现以上需求，我们需要注册两个事件:</p>
+<ul class="simple">
+<li><code class="code docutils literal notranslate"><span class="pre">EVENT.POST_SYSTEM_INIT</span></code> 系统初始化后</li>
+<li><code class="code docutils literal notranslate"><span class="pre">EVENT.POST_AFTER_TRADING</span></code> 交易结束后</li>
+</ul>
+<p>进度条相关 我们使用 <code class="code docutils literal notranslate"><span class="pre">click</span></code> 库来实现，具体 API 这里不详细展开。</p>
+<p>接下来，我们在 <code class="code docutils literal notranslate"><span class="pre">start_up</span></code> 函数中进行事件注册，并定义 <code class="code docutils literal notranslate"><span class="pre">_init</span></code> 和 <code class="code docutils literal notranslate"><span class="pre">_tick</span></code> 函数来响应事件。</p>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">rqalpha.interface</span> <span class="k">import</span> <span class="n">AbstractMod</span>
+
+<span class="k">class</span> <span class="nc">ProgressMod</span><span class="p">(</span><span class="n">AbstractMod</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_env</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">start_up</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">env</span><span class="p">,</span> <span class="n">mod_config</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_env</span> <span class="o">=</span> <span class="n">env</span>
+        <span class="n">env</span><span class="o">.</span><span class="n">event_bus</span><span class="o">.</span><span class="n">add_listener</span><span class="p">(</span><span class="n">EVENT</span><span class="o">.</span><span class="n">POST_AFTER_TRADING</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tick</span><span class="p">)</span>
+        <span class="n">env</span><span class="o">.</span><span class="n">event_bus</span><span class="o">.</span><span class="n">add_listener</span><span class="p">(</span><span class="n">EVENT</span><span class="o">.</span><span class="n">POST_SYSTEM_INIT</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">tear_down</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">success</span><span class="p">,</span> <span class="n">exception</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">_init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">_tick</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="k">pass</span>
+</pre></div>
+</div>
+<p>在 <code class="code docutils literal notranslate"><span class="pre">_init</span></code> 函数中，初始化 <code class="code docutils literal notranslate"><span class="pre">progressBar</span></code>，进度条的长度为回测的总时长</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">_init</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="n">trading_length</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_env</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">trading_calendar</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">progress_bar</span> <span class="o">=</span> <span class="n">click</span><span class="o">.</span><span class="n">progressbar</span><span class="p">(</span><span class="n">length</span><span class="o">=</span><span class="n">trading_length</span><span class="p">,</span> <span class="n">show_eta</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>在 <code class="code docutils literal notranslate"><span class="pre">_tick</span></code> 函数中，更新进度条</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">_tick</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">progress_bar</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>在 <code class="code docutils literal notranslate"><span class="pre">tear_down</span></code> 函数中，终止进度条</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">tear_down</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">success</span><span class="p">,</span> <span class="n">exception</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">progress_bar</span><span class="o">.</span><span class="n">render_finish</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>至此，我们就完成了整个 ProgressMod 的编写</p>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">click</span>
+
+<span class="kn">from</span> <span class="nn">rqalpha.interface</span> <span class="k">import</span> <span class="n">AbstractMod</span>
+<span class="kn">from</span> <span class="nn">rqalpha.events</span> <span class="k">import</span> <span class="n">EVENT</span>
+
+
+<span class="k">class</span> <span class="nc">ProgressMod</span><span class="p">(</span><span class="n">AbstractMod</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_env</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">progress_bar</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">start_up</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">env</span><span class="p">,</span> <span class="n">mod_config</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_env</span> <span class="o">=</span> <span class="n">env</span>
+        <span class="n">env</span><span class="o">.</span><span class="n">event_bus</span><span class="o">.</span><span class="n">add_listener</span><span class="p">(</span><span class="n">EVENT</span><span class="o">.</span><span class="n">POST_AFTER_TRADING</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tick</span><span class="p">)</span>
+        <span class="n">env</span><span class="o">.</span><span class="n">event_bus</span><span class="o">.</span><span class="n">add_listener</span><span class="p">(</span><span class="n">EVENT</span><span class="o">.</span><span class="n">POST_SYSTEM_INIT</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="n">trading_length</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_env</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">trading_calendar</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">progress_bar</span> <span class="o">=</span> <span class="n">click</span><span class="o">.</span><span class="n">progressbar</span><span class="p">(</span><span class="n">length</span><span class="o">=</span><span class="n">trading_length</span><span class="p">,</span> <span class="n">show_eta</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_tick</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">progress_bar</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">tear_down</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">success</span><span class="p">,</span> <span class="n">exception</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">progress_bar</span><span class="o">.</span><span class="n">render_finish</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>最后，我们添加默认的载入函数 <code class="code docutils literal notranslate"><span class="pre">load_mod</span></code>，一个完整的进度条的Mod就完成了</p>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">click</span>
+
+<span class="kn">from</span> <span class="nn">rqalpha.interface</span> <span class="k">import</span> <span class="n">AbstractMod</span>
+<span class="kn">from</span> <span class="nn">rqalpha.events</span> <span class="k">import</span> <span class="n">EVENT</span>
+
+
+<span class="k">class</span> <span class="nc">ProgressMod</span><span class="p">(</span><span class="n">AbstractMod</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_env</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">progress_bar</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">start_up</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">env</span><span class="p">,</span> <span class="n">mod_config</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_env</span> <span class="o">=</span> <span class="n">env</span>
+        <span class="n">env</span><span class="o">.</span><span class="n">event_bus</span><span class="o">.</span><span class="n">add_listener</span><span class="p">(</span><span class="n">EVENT</span><span class="o">.</span><span class="n">POST_AFTER_TRADING</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tick</span><span class="p">)</span>
+        <span class="n">env</span><span class="o">.</span><span class="n">event_bus</span><span class="o">.</span><span class="n">add_listener</span><span class="p">(</span><span class="n">EVENT</span><span class="o">.</span><span class="n">POST_SYSTEM_INIT</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="n">trading_length</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_env</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">trading_calendar</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">progress_bar</span> <span class="o">=</span> <span class="n">click</span><span class="o">.</span><span class="n">progressbar</span><span class="p">(</span><span class="n">length</span><span class="o">=</span><span class="n">trading_length</span><span class="p">,</span> <span class="n">show_eta</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_tick</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">progress_bar</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">tear_down</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">success</span><span class="p">,</span> <span class="n">exception</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">progress_bar</span><span class="o">.</span><span class="n">render_finish</span><span class="p">()</span>
+
+
+<span class="k">def</span> <span class="nf">load_mod</span><span class="p">():</span>
+    <span class="k">return</span> <span class="n">ProgressMod</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="id4">
+<h2>事件源的扩展<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h2>
+<p>上一节讲的是如何订阅事件源，那么如何发布事件呢？其实也很简单，只需要通过 <code class="code docutils literal notranslate"><span class="pre">publish_event</span></code> 就可以进行事件的发布。</p>
+<p>RQAlpha 整个回测模块是通过 <code class="code docutils literal notranslate"><span class="pre">rqalpha_mod_sys_simulation</span></code> 实现的，其中定义了基于Bar回测的 <code class="code docutils literal notranslate"><span class="pre">event_source</span></code> 和 <code class="code docutils literal notranslate"><span class="pre">simulation_broker</span></code>， 其中包含了 MarketEvent 和 OrderEvent 大部分事件源的定义和发布。</p>
+<p>我们简单来分析一下日线回测 <code class="code docutils literal notranslate"><span class="pre">simulation_event_source</span></code> 中 MaketEvent 相关事件的触发流程。</p>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">SimulationEventSource</span><span class="p">(</span><span class="n">AbstractEventSource</span><span class="p">):</span>
+
+    <span class="o">...</span>
+
+    <span class="k">def</span> <span class="nf">events</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">,</span> <span class="n">frequency</span><span class="p">):</span>
+        <span class="c1"># 根据起始日期和结束日期，获取所有的交易日，然后再循环获取每一个交易日</span>
+        <span class="k">for</span> <span class="n">day</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_env</span><span class="o">.</span><span class="n">data_proxy</span><span class="o">.</span><span class="n">get_trading_dates</span><span class="p">(</span><span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">):</span>
+            <span class="n">date</span> <span class="o">=</span> <span class="n">day</span><span class="o">.</span><span class="n">to_pydatetime</span><span class="p">()</span>
+            <span class="n">dt_before_trading</span> <span class="o">=</span> <span class="n">date</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">hour</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">minute</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">dt_bar</span> <span class="o">=</span> <span class="n">date</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">hour</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span> <span class="n">minute</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">dt_after_trading</span> <span class="o">=</span> <span class="n">date</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">hour</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span> <span class="n">minute</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
+            <span class="n">dt_settlement</span> <span class="o">=</span> <span class="n">date</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">hour</span><span class="o">=</span><span class="mi">17</span><span class="p">,</span> <span class="n">minute</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+            <span class="k">yield</span> <span class="n">Event</span><span class="p">(</span><span class="n">EVENT</span><span class="o">.</span><span class="n">BEFORE_TRADING</span><span class="p">,</span> <span class="n">calendar_dt</span><span class="o">=</span><span class="n">dt_before_trading</span><span class="p">,</span> <span class="n">trading_dt</span><span class="o">=</span><span class="n">dt_before_trading</span><span class="p">)</span>
+            <span class="k">yield</span> <span class="n">Event</span><span class="p">(</span><span class="n">EVENT</span><span class="o">.</span><span class="n">BAR</span><span class="p">,</span> <span class="n">calendar_dt</span><span class="o">=</span><span class="n">dt_bar</span><span class="p">,</span> <span class="n">trading_dt</span><span class="o">=</span><span class="n">dt_bar</span><span class="p">)</span>
+
+            <span class="k">yield</span> <span class="n">Event</span><span class="p">(</span><span class="n">EVENT</span><span class="o">.</span><span class="n">AFTER_TRADING</span><span class="p">,</span> <span class="n">calendar_dt</span><span class="o">=</span><span class="n">dt_after_trading</span><span class="p">,</span> <span class="n">trading_dt</span><span class="o">=</span><span class="n">dt_after_trading</span><span class="p">)</span>
+            <span class="k">yield</span> <span class="n">Event</span><span class="p">(</span><span class="n">EVENT</span><span class="o">.</span><span class="n">SETTLEMENT</span><span class="p">,</span> <span class="n">calendar_dt</span><span class="o">=</span><span class="n">dt_settlement</span><span class="p">,</span> <span class="n">trading_dt</span><span class="o">=</span><span class="n">dt_settlement</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><code class="code docutils literal notranslate"><span class="pre">event</span></code> 函数是一个generator, 在 rqalpha_mod_sys_simulation 中主要返回 <code class="code docutils literal notranslate"><span class="pre">BEFORE_TRADING</span></code>, <code class="code docutils literal notranslate"><span class="pre">BAR</span></code>, <code class="code docutils literal notranslate"><span class="pre">AFTER_TRADING</span></code> 和 <code class="code docutils literal notranslate"><span class="pre">SETTLEMENT</span></code> 事件。RQAlpha 在接受到对应的事件后，会自动的进行相应的 <cite>publish_event</cite> 操作，并且会自动 publish 相关的 <cite>PRE_</cite> 和 <cite>POST_</cite> 事件。</p>
+<p>而在 <code class="code docutils literal notranslate"><span class="pre">simulation_broker</span></code> 中可以看到，当被调用 <cite>cancel_order</cite> 时，会模拟撤单的执行流程，分别触发 <code class="code docutils literal notranslate"><span class="pre">ORDER_PENDING_CANCEL</span></code> &amp;&amp; <code class="code docutils literal notranslate"><span class="pre">ORDER_CANCELLATION_PASS</span></code> 事件，并将 <code class="code docutils literal notranslate"><span class="pre">account</span></code> 和 <code class="code docutils literal notranslate"><span class="pre">order</span></code> 传递给回调函数，使其可以获取其可能需要到的数据。</p>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">SimulationBroker</span><span class="p">(</span><span class="n">AbstractBroker</span><span class="p">,</span> <span class="n">Persistable</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">cancel_order</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">order</span><span class="p">):</span>
+        <span class="n">account</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_account_for</span><span class="p">(</span><span class="n">order</span><span class="o">.</span><span class="n">order_book_id</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_env</span><span class="o">.</span><span class="n">event_bus</span><span class="o">.</span><span class="n">publish_event</span><span class="p">(</span><span class="n">Event</span><span class="p">(</span><span class="n">EVENT</span><span class="o">.</span><span class="n">ORDER_PENDING_CANCEL</span><span class="p">,</span> <span class="n">account</span><span class="o">=</span><span class="n">account</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">))</span>
+
+        <span class="n">order</span><span class="o">.</span><span class="n">_mark_cancelled</span><span class="p">(</span><span class="n">_</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{order_id}</span><span class="s2"> order has been cancelled by user.&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">order_id</span><span class="o">=</span><span class="n">order</span><span class="o">.</span><span class="n">order_id</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_env</span><span class="o">.</span><span class="n">event_bus</span><span class="o">.</span><span class="n">publish_event</span><span class="p">(</span><span class="n">Event</span><span class="p">(</span><span class="n">EVENT</span><span class="o">.</span><span class="n">ORDER_CANCELLATION_PASS</span><span class="p">,</span> <span class="n">account</span><span class="o">=</span><span class="n">account</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">))</span>
+
+        <span class="c1"># account.on_order_cancellation_pass(order)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_open_orders</span><span class="o">.</span><span class="n">remove</span><span class="p">((</span><span class="n">account</span><span class="p">,</span> <span class="n">order</span><span class="p">))</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_delayed_orders</span><span class="o">.</span><span class="n">remove</span><span class="p">((</span><span class="n">account</span><span class="p">,</span> <span class="n">order</span><span class="p">))</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                <span class="k">pass</span>
+</pre></div>
+</div>
+<p>如果想查看详细的事件源相关的内容，建议直接阅读 <cite>rqalpha_mod_sys_simulation</cite> 源码，您会发现，扩展事件源比想象中要简单。</p>
+<p>您也可以基于 <cite>rqalpha_mod_sys_simulation</cite> 扩展一个自定义的回测引擎，实现您特定的回测需求。</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">扩展事件源</a><ul>
+<li><a class="reference internal" href="#id2">事件源分类</a></li>
+<li><a class="reference internal" href="#id3">事件源的订阅及使用</a></li>
+<li><a class="reference internal" href="#id4">事件源的扩展</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="mod.html"
+                        title="previous chapter">Mod</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="data_source.html"
+                        title="next chapter">扩展数据源</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/development/event_source.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="data_source.html" title="扩展数据源"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="mod.html" title="Mod"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">CNICPortofolio 0.0 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+        &#169; Copyright .
+      Last updated on Sep 06, 2019.
+    </div>
+<script type="text/javascript">
+    console.log("RQAlpha Powered By RiceQuant.");
+</script>
+
+  </body>
+</html>

@@ -1,0 +1,188 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>教程：均值方差模型 &#8212; CNICPortofolio 0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="策略示例" href="examples.html" />
+    <link rel="prev" title="介绍" href="overview.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="examples.html" title="策略示例"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="overview.html" title="介绍"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">CNICPortofolio 0.0 documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="intro-tutorial">
+<span id="id1"></span><h1>教程：均值方差模型<a class="headerlink" href="#intro-tutorial" title="Permalink to this headline">¶</a></h1>
+<hr class="docutils" />
+<p>CNICPortfolio 抽离了策略框架的所有技术细节，以API的方式提供给策略研发者用于编写策略，从而避免陷入过多的技术细节，而非金融程序建模本身。</p>
+<p>本教程以均值方差模型为例，介绍如何在我们的平台上运行一个投资组合策略</p>
+<p>在进行回测的过程中需要明确以下几个回测要素，下面的参数是必须的：</p>
+<ul class="simple">
+<li>策略文件</li>
+<li>配置文件</li>
+<li>回测起始时间</li>
+<li>回测结束时间</li>
+<li>起始资金</li>
+<li>Benchmark</li>
+</ul>
+<p>策略编写流程</p>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">handle_data</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+    <span class="n">date</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">today</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">date</span> <span class="ow">in</span> <span class="n">context</span><span class="o">.</span><span class="n">balance_dates</span><span class="p">:</span>
+        <span class="n">temp</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">code</span> <span class="ow">in</span> <span class="n">context</span><span class="o">.</span><span class="n">stocks</span><span class="p">:</span>
+            <span class="n">history_price</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">history_bars</span><span class="p">(</span><span class="n">code</span><span class="p">,</span>
+                                              <span class="n">context</span><span class="o">.</span><span class="n">expected_return_days</span><span class="p">,</span>
+                                              <span class="s1">&#39;1d&#39;</span><span class="p">,</span><span class="s1">&#39;close&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">history_price</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">temp</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">code</span><span class="p">:</span><span class="n">history_price</span><span class="p">})</span>
+        <span class="n">history_prices</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">temp</span><span class="p">)</span>
+        <span class="n">mu</span> <span class="o">=</span> <span class="n">expected_returns</span><span class="o">.</span><span class="n">mean_historical_return</span><span class="p">(</span><span class="n">history_prices</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">context</span><span class="o">.</span><span class="n">cov_method</span> <span class="o">==</span> <span class="s1">&#39;sample&#39;</span><span class="p">:</span>
+            <span class="n">S</span> <span class="o">=</span> <span class="n">risk_models</span><span class="o">.</span><span class="n">sample_cov</span><span class="p">(</span><span class="n">history_prices</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">context</span><span class="o">.</span><span class="n">cov_method</span> <span class="o">==</span> <span class="s1">&#39;semi&#39;</span><span class="p">:</span>
+            <span class="n">S</span> <span class="o">=</span> <span class="n">risk_models</span><span class="o">.</span><span class="n">semicovariance</span><span class="p">(</span><span class="n">history_prices</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">context</span><span class="o">.</span><span class="n">cov_method</span> <span class="o">==</span> <span class="s1">&#39;exp_cov&#39;</span><span class="p">:</span>
+            <span class="n">S</span> <span class="o">=</span> <span class="n">risk_models</span><span class="o">.</span><span class="n">exp_cov</span><span class="p">(</span><span class="n">history_prices</span><span class="p">)</span>
+
+        <span class="n">ef</span> <span class="o">=</span> <span class="n">EfficientFrontier</span><span class="p">(</span><span class="n">mu</span><span class="p">,</span> <span class="n">S</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">context</span><span class="o">.</span><span class="n">opt_criterion</span> <span class="o">==</span> <span class="s1">&#39;max_sharpe&#39;</span><span class="p">:</span>
+            <span class="n">weights</span> <span class="o">=</span> <span class="n">ef</span><span class="o">.</span><span class="n">max_sharpe</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="n">context</span><span class="o">.</span><span class="n">opt_criterion</span> <span class="o">==</span> <span class="s1">&#39;efficient_return&#39;</span><span class="p">:</span>
+            <span class="n">weights</span> <span class="o">=</span> <span class="n">ef</span><span class="o">.</span><span class="n">efficient_return</span><span class="p">(</span><span class="n">context</span><span class="o">.</span><span class="n">target_return</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">context</span><span class="o">.</span><span class="n">opt_criterion</span> <span class="o">==</span> <span class="s1">&#39;efficient_risk&#39;</span><span class="p">:</span>
+            <span class="n">weights</span> <span class="o">=</span> <span class="n">ef</span><span class="o">.</span><span class="n">efficient_risk</span><span class="p">(</span><span class="n">context</span><span class="o">.</span><span class="n">targe_risk</span><span class="p">,</span> <span class="n">context</span><span class="o">.</span><span class="n">risk_free_rate</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">context</span><span class="o">.</span><span class="n">opt_criterion</span> <span class="o">==</span> <span class="s1">&#39;min_volatility&#39;</span><span class="p">:</span>
+            <span class="n">weights</span> <span class="o">=</span> <span class="n">ef</span><span class="o">.</span><span class="n">min_volatility</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">context</span><span class="o">.</span><span class="n">cleaned_weights</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">weights</span> <span class="o">=</span> <span class="n">ef</span><span class="o">.</span><span class="n">clean_weights</span><span class="p">()</span>
+
+        <span class="n">weight</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">prices</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">code</span> <span class="ow">in</span> <span class="n">context</span><span class="o">.</span><span class="n">stocks</span><span class="p">:</span>
+            <span class="n">weight</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">weights</span><span class="p">[</span><span class="n">code</span><span class="p">])</span>
+            <span class="n">prices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">latest_price</span><span class="p">(</span><span class="n">code</span><span class="p">,</span><span class="s2">&quot;1d&quot;</span><span class="p">))</span>
+
+        <span class="n">data</span><span class="o">.</span><span class="n">order_target_percent</span><span class="p">(</span><span class="n">context</span><span class="o">.</span><span class="n">stocks</span><span class="p">,</span> <span class="n">weight</span><span class="p">,</span><span class="n">prices</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>然后编写我们的配置文件</p>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;stragety&quot;</span><span class="p">:</span><span class="s2">&quot;sample_markowitz&quot;</span><span class="p">,</span>
+<span class="s2">&quot;start&quot;</span><span class="p">:</span><span class="mi">20180101</span><span class="p">,</span>
+<span class="s2">&quot;end&quot;</span><span class="p">:</span><span class="mi">20181230</span><span class="p">,</span>
+<span class="s2">&quot;initial_capital&quot;</span><span class="p">:</span><span class="mi">1000000</span><span class="p">,</span>
+<span class="s2">&quot;benchmark&quot;</span><span class="p">:</span><span class="s2">&quot;000001.SH&quot;</span><span class="p">,</span>
+<span class="s2">&quot;balanced_dates&quot;</span><span class="p">:{</span><span class="s2">&quot;method&quot;</span><span class="p">:</span><span class="s2">&quot;equal_difference&quot;</span><span class="p">,</span><span class="s2">&quot;param&quot;</span><span class="p">:</span><span class="mi">20</span><span class="p">},</span>
+ <span class="s2">&quot;stocks&quot;</span> <span class="p">:</span> <span class="p">[</span><span class="s2">&quot;000001.SZ&quot;</span><span class="p">,</span><span class="s2">&quot;000002.SZ&quot;</span><span class="p">,</span><span class="s2">&quot;000004.SZ&quot;</span><span class="p">,</span><span class="s2">&quot;000005.SZ&quot;</span><span class="p">,</span><span class="s2">&quot;000006.SZ&quot;</span><span class="p">,</span><span class="s2">&quot;000007.SZ&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;000008.SZ&quot;</span><span class="p">,</span><span class="s2">&quot;000009.SZ&quot;</span><span class="p">,</span><span class="s2">&quot;000010.SZ&quot;</span><span class="p">],</span>
+ <span class="s2">&quot;expected_return_days&quot;</span> <span class="p">:</span> <span class="mi">30</span><span class="p">,</span>
+ <span class="s2">&quot;cov_method&quot;</span> <span class="p">:</span> <span class="s2">&quot;sample&quot;</span><span class="p">,</span>
+ <span class="s2">&quot;opt_criterion&quot;</span> <span class="p">:</span> <span class="s2">&quot;max_sharpe&quot;</span><span class="p">,</span>
+ <span class="s2">&quot;cleaned_weights&quot;</span> <span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+ <span class="s2">&quot;target_return&quot;</span> <span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+ <span class="s2">&quot;target_risk&quot;</span>   <span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
+ <span class="s2">&quot;risk_free_rate&quot;</span> <span class="p">:</span> <span class="mf">0.02</span><span class="p">,</span>
+ <span class="s2">&quot;opt_param&quot;</span><span class="p">:{</span><span class="s2">&quot;target_return&quot;</span><span class="p">:{</span><span class="s2">&quot;start&quot;</span><span class="p">:</span><span class="mf">0.1</span><span class="p">,</span><span class="s2">&quot;step&quot;</span><span class="p">:</span><span class="mf">0.01</span><span class="p">,</span><span class="s2">&quot;dt&quot;</span><span class="p">:</span><span class="mi">3</span><span class="p">,</span><span class="s2">&quot;data_type&quot;</span><span class="p">:</span><span class="s1">&#39;float&#39;</span><span class="p">},</span>
+              <span class="s2">&quot;expected_return_days&quot;</span><span class="p">:{</span><span class="s2">&quot;start&quot;</span><span class="p">:</span><span class="mi">10</span><span class="p">,</span><span class="s2">&quot;step&quot;</span><span class="p">:</span><span class="mi">10</span><span class="p">,</span><span class="s2">&quot;dt&quot;</span><span class="p">:</span><span class="mi">3</span><span class="p">,</span><span class="s2">&quot;data_type&quot;</span><span class="p">:</span><span class="s1">&#39;int&#39;</span><span class="p">}}</span>
+</pre></div>
+</div>
+<p>这样就写好了一个均值方差模型</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="overview.html"
+                        title="previous chapter">介绍</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="examples.html"
+                        title="next chapter">策略示例</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/intro/tutorial.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="examples.html" title="策略示例"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="overview.html" title="介绍"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">CNICPortofolio 0.0 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+        &#169; Copyright .
+      Last updated on Nov 07, 2019.
+    </div>
+<script type="text/javascript">
+    console.log("RQAlpha Powered By RiceQuant.");
+</script>
+
+  </body>
+</html>

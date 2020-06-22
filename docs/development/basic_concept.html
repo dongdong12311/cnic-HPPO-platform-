@@ -1,0 +1,896 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>基本概念 &#8212; CNICPortofolio 0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Mod" href="mod.html" />
+    <link rel="prev" title="如何贡献代码" href="make_contribute.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="mod.html" title="Mod"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="make_contribute.html" title="如何贡献代码"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">CNICPortofolio 0.0 documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="development-basic-concept">
+<span id="id1"></span><h1>基本概念<a class="headerlink" href="#development-basic-concept" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="module-rqalpha.interface">
+<span id="id2"></span><h2>接口<a class="headerlink" href="#module-rqalpha.interface" title="Permalink to this headline">¶</a></h2>
+<p>我们将重要模块进行了抽离，使得通过 Mod 来替换核心组件成为了可能。</p>
+<ul class="simple">
+<li>策略加载模块(AbstractStrategyLoader): 加载策略，并将策略运行所需要的域环境传递给策略执行代码，可以通过扩展策略加载器来实现自定义策略源、自定义API载入等功能。</li>
+<li>事件生成模块(AbstractEventSource): 无论是回测还是实盘，都需要基于数据源生成对应的事件，而事件生成模块主要负责生成策略执行相应的事件。</li>
+<li>数据源模块(AbstractDataSource): 日线数据、分钟线数据、财务数据、债务数据等等都可以通过该模块进行扩展和使用。</li>
+<li>券商代理模块(AbstractBroker): 用户的所有下单、账户、撮合逻辑其实都来自于券商+交易所，即使是回测，也实际是一个回测模拟交易所。因此可以通过扩展该模块来自定义Broker，也可以通过该模块扩展实盘交易等。</li>
+</ul>
+<img alt="https://raw.githubusercontent.com/ricequant/rq-resource/master/rqalpha/RQAlpha_structure.png" src="https://raw.githubusercontent.com/ricequant/rq-resource/master/rqalpha/RQAlpha_structure.png" />
+<p>详细的 RQAlpha 结构图请查看 <a class="reference external" href="https://www.processon.com/view/link/58aa9809e4b07158582ebf13">Processon RQAlpha Structure</a></p>
+<div class="section" id="account">
+<h3>Account<a class="headerlink" href="#account" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="rqalpha.interface.AbstractAccount">
+<em class="property">class </em><code class="descclassname">rqalpha.interface.</code><code class="descname">AbstractAccount</code><a class="reference internal" href="../_modules/rqalpha/interface.html#AbstractAccount"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#rqalpha.interface.AbstractAccount" title="Permalink to this definition">¶</a></dt>
+<dd><p>账户接口，主要用于构建账户信息</p>
+<p>您可以在 Mod 的 start_up 阶段通过 env.set_account_model(account_type, AccountModel) 来注入和修改 AccountModel
+您也可以通过 env.get_account_model(account_type) 来获取指定类型的 AccountModel</p>
+<dl class="attribute">
+<dt id="rqalpha.interface.AbstractAccount.cash">
+<code class="descname">cash</code><a class="headerlink" href="#rqalpha.interface.AbstractAccount.cash" title="Permalink to this definition">¶</a></dt>
+<dd><p>[Required]</p>
+<p>返回当前账户的可用资金</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="rqalpha.interface.AbstractAccount.fast_forward">
+<code class="descname">fast_forward</code><span class="sig-paren">(</span><em>orders</em>, <em>trades</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rqalpha/interface.html#AbstractAccount.fast_forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#rqalpha.interface.AbstractAccount.fast_forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>[Required]</p>
+<p>fast_forward 函数接受当日订单数据和成交数据，从而将当前的持仓快照快速推进到最新持仓状态</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>orders</strong> (<em>list</em>) – 当日订单列表</li>
+<li><strong>trades</strong> (<em>list</em>) – 当日成交列表</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="rqalpha.interface.AbstractAccount.frozen_cash">
+<code class="descname">frozen_cash</code><a class="headerlink" href="#rqalpha.interface.AbstractAccount.frozen_cash" title="Permalink to this definition">¶</a></dt>
+<dd><p>[Required]</p>
+<p>返回当前账户的冻结资金</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="rqalpha.interface.AbstractAccount.get_state">
+<code class="descname">get_state</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rqalpha/interface.html#AbstractAccount.get_state"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#rqalpha.interface.AbstractAccount.get_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>[Required]</p>
+<p>主要用于进行持久化时候，提供对应需要持久化的数据</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="rqalpha.interface.AbstractAccount.market_value">
+<code class="descname">market_value</code><a class="headerlink" href="#rqalpha.interface.AbstractAccount.market_value" title="Permalink to this definition">¶</a></dt>
+<dd><p>[Required]</p>
+<p>返回当前账户的市值</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="rqalpha.interface.AbstractAccount.order">
+<code class="descname">order</code><span class="sig-paren">(</span><em>order_book_id</em>, <em>quantity</em>, <em>style</em>, <em>target=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rqalpha/interface.html#AbstractAccount.order"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#rqalpha.interface.AbstractAccount.order" title="Permalink to this definition">¶</a></dt>
+<dd><p>[Required]</p>
+<p>系统下单函数会调用该函数来完成下单操作</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="rqalpha.interface.AbstractAccount.positions">
+<code class="descname">positions</code><a class="headerlink" href="#rqalpha.interface.AbstractAccount.positions" title="Permalink to this definition">¶</a></dt>
+<dd><p>[Required]</p>
+<p>返回当前账户的持仓数据</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Positions(PositionModel)</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="rqalpha.interface.AbstractAccount.set_state">
+<code class="descname">set_state</code><span class="sig-paren">(</span><em>state</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rqalpha/interface.html#AbstractAccount.set_state"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#rqalpha.interface.AbstractAccount.set_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>[Requried]</p>
+<p>主要用于持久化恢复时，根据提供的持久化数据进行恢复Account的实现</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="rqalpha.interface.AbstractAccount.total_value">
+<code class="descname">total_value</code><a class="headerlink" href="#rqalpha.interface.AbstractAccount.total_value" title="Permalink to this definition">¶</a></dt>
+<dd><p>[Required]</p>
+<p>返回当前账户的总权益</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="rqalpha.interface.AbstractAccount.transaction_cost">
+<code class="descname">transaction_cost</code><a class="headerlink" href="#rqalpha.interface.AbstractAccount.transaction_cost" title="Permalink to this definition">¶</a></dt>
+<dd><p>[Required]</p>
+<p>返回当前账户的当日交易费用</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="rqalpha.interface.AbstractAccount.type">
+<code class="descname">type</code><a class="headerlink" href="#rqalpha.interface.AbstractAccount.type" title="Permalink to this definition">¶</a></dt>
+<dd><p>[Required]</p>
+<p>返回 String 类型的账户类型标示</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="position">
+<h3>Position<a class="headerlink" href="#position" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="rqalpha.interface.AbstractPosition">
+<em class="property">class </em><code class="descclassname">rqalpha.interface.</code><code class="descname">AbstractPosition</code><a class="reference internal" href="../_modules/rqalpha/interface.html#AbstractPosition"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#rqalpha.interface.AbstractPosition" title="Permalink to this definition">¶</a></dt>
+<dd><p>仓位接口，主要用于构建仓位信息</p>
+<p>您可以在 Mod 的 start_up 阶段通过 env.set_position_model(account_type, PositionModel) 来注入和修改 PositionModel
+您也可以通过 env.get_position_model(account_type) 来获取制定类型的 PositionModel</p>
+<dl class="method">
+<dt id="rqalpha.interface.AbstractPosition.get_state">
+<code class="descname">get_state</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rqalpha/interface.html#AbstractPosition.get_state"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#rqalpha.interface.AbstractPosition.get_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>[Required]</p>
+<p>主要用于进行持久化时候，提供对应需要持久化的数据</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="rqalpha.interface.AbstractPosition.market_value">
+<code class="descname">market_value</code><a class="headerlink" href="#rqalpha.interface.AbstractPosition.market_value" title="Permalink to this definition">¶</a></dt>
+<dd><p>[Required]</p>
+<p>返回当前持仓的市值</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="rqalpha.interface.AbstractPosition.order_book_id">
+<code class="descname">order_book_id</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rqalpha/interface.html#AbstractPosition.order_book_id"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#rqalpha.interface.AbstractPosition.order_book_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>[Required]</p>
+<p>返回当前持仓的 order_book_id</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="rqalpha.interface.AbstractPosition.set_state">
+<code class="descname">set_state</code><span class="sig-paren">(</span><em>state</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rqalpha/interface.html#AbstractPosition.set_state"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#rqalpha.interface.AbstractPosition.set_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>[Requried]</p>
+<p>主要用于持久化恢复时，根据提供的持久化数据进行恢复 Position 的实现</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="rqalpha.interface.AbstractPosition.transaction_cost">
+<code class="descname">transaction_cost</code><a class="headerlink" href="#rqalpha.interface.AbstractPosition.transaction_cost" title="Permalink to this definition">¶</a></dt>
+<dd><p>[Required]</p>
+<p>返回当前持仓的当日交易费用</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="rqalpha.interface.AbstractPosition.type">
+<code class="descname">type</code><a class="headerlink" href="#rqalpha.interface.AbstractPosition.type" title="Permalink to this definition">¶</a></dt>
+<dd><p>[Required]</p>
+<p>返回 String 类型的账户类型标示</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="strategyloader">
+<h3>StrategyLoader<a class="headerlink" href="#strategyloader" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="rqalpha.interface.AbstractStrategyLoader">
+<em class="property">class </em><code class="descclassname">rqalpha.interface.</code><code class="descname">AbstractStrategyLoader</code><a class="reference internal" href="../_modules/rqalpha/interface.html#AbstractStrategyLoader"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#rqalpha.interface.AbstractStrategyLoader" title="Permalink to this definition">¶</a></dt>
+<dd><p>策略加载器，其主要作用是加载策略，并将策略运行所需要的域环境传递给策略执行代码。</p>
+<p>在扩展模块中，可以通过调用 <code class="docutils literal notranslate"><span class="pre">env.set_strategy_loader</span></code> 来替换默认的策略加载器。</p>
+<dl class="method">
+<dt id="rqalpha.interface.AbstractStrategyLoader.load">
+<code class="descname">load</code><span class="sig-paren">(</span><em>scope</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rqalpha/interface.html#AbstractStrategyLoader.load"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#rqalpha.interface.AbstractStrategyLoader.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>[Required]</p>
+<p>load 函数负责组装策略代码和策略代码所在的域，并输出最终组装好的可执行域。</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>scope</strong> (<em>dict</em>) – 策略代码运行环境，在传入时，包含了所有基础API。
+通过在 scope 中添加函数可以实现自定义API；通过覆盖 scope 中相应的函数，可以覆盖原API。</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">scope，其中应包含策略相应函数，如 <code class="docutils literal notranslate"><span class="pre">init</span></code>, <code class="docutils literal notranslate"><span class="pre">before_trading</span></code> 等</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="eventsource">
+<h3>EventSource<a class="headerlink" href="#eventsource" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="rqalpha.interface.AbstractEventSource">
+<em class="property">class </em><code class="descclassname">rqalpha.interface.</code><code class="descname">AbstractEventSource</code><a class="reference internal" href="../_modules/rqalpha/interface.html#AbstractEventSource"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#rqalpha.interface.AbstractEventSource" title="Permalink to this definition">¶</a></dt>
+<dd><p>事件源接口。RQAlpha 从此对象中获取事件，驱动整个事件循环。</p>
+<p>在扩展模块中，可以通过调用 <code class="docutils literal notranslate"><span class="pre">env.set_event_source</span></code> 来替换默认的事件源。</p>
+<dl class="method">
+<dt id="rqalpha.interface.AbstractEventSource.events">
+<code class="descname">events</code><span class="sig-paren">(</span><em>start_date</em>, <em>end_date</em>, <em>frequency</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rqalpha/interface.html#AbstractEventSource.events"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#rqalpha.interface.AbstractEventSource.events" title="Permalink to this definition">¶</a></dt>
+<dd><p>[Required]</p>
+<p>扩展 EventSource 必须实现 events 函数。</p>
+<p>events 是一个 event generator, 在相应事件的时候需要以如下格式来传递事件</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">yield</span> <span class="n">trading_datetime</span><span class="p">,</span> <span class="n">calendar_datetime</span><span class="p">,</span> <span class="n">EventEnum</span>
+</pre></div>
+</div>
+<p>其中 trading_datetime 为基于交易日的 datetime, calendar_datetime 为基于自然日的 datetime (因为夜盘的存在，交易日和自然日未必相同)</p>
+<p>EventEnum 为 <code class="xref py py-class docutils literal notranslate"><span class="pre">Events</span></code></p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>start_date</strong> (<em>datetime.date</em>) – 起始日期, 系统会将 <cite>config.base.start_date</cite> 传递 events 函数</li>
+<li><strong>end_date</strong> (<em>datetime.date</em>) – 结束日期，系统会将 <cite>config.base.end_date</cite> 传递给 events 函数</li>
+<li><strong>frequency</strong> (<em>str</em>) – 周期频率，<cite>1d</cite> 表示日周期, <cite>1m</cite> 表示分钟周期</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">None</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="datasource">
+<h3>DataSource<a class="headerlink" href="#datasource" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="rqalpha.interface.AbstractDataSource">
+<em class="property">class </em><code class="descclassname">rqalpha.interface.</code><code class="descname">AbstractDataSource</code><a class="reference internal" href="../_modules/rqalpha/interface.html#AbstractDataSource"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#rqalpha.interface.AbstractDataSource" title="Permalink to this definition">¶</a></dt>
+<dd><p>数据源接口。RQAlpha 中通过 <code class="xref py py-class docutils literal notranslate"><span class="pre">DataProxy</span></code> 进一步进行了封装，向上层提供更易用的接口。</p>
+<p>在扩展模块中，可以通过调用 <code class="docutils literal notranslate"><span class="pre">env.set_data_source</span></code> 来替换默认的数据源。可参考 <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseDataSource</span></code>。</p>
+<dl class="method">
+<dt id="rqalpha.interface.AbstractDataSource.available_data_range">
+<code class="descname">available_data_range</code><span class="sig-paren">(</span><em>frequency</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rqalpha/interface.html#AbstractDataSource.available_data_range"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#rqalpha.interface.AbstractDataSource.available_data_range" title="Permalink to this definition">¶</a></dt>
+<dd><p>此数据源能提供数据的时间范围</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>frequency</strong> (<em>str</em>) – 周期频率，<cite>1d</cite> 表示日周期, <cite>1m</cite> 表示分钟周期</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">(earliest, latest)</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="rqalpha.interface.AbstractDataSource.current_snapshot">
+<code class="descname">current_snapshot</code><span class="sig-paren">(</span><em>instrument</em>, <em>frequency</em>, <em>dt</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rqalpha/interface.html#AbstractDataSource.current_snapshot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#rqalpha.interface.AbstractDataSource.current_snapshot" title="Permalink to this definition">¶</a></dt>
+<dd><p>获得当前市场快照数据。只能在日内交易阶段调用，获取当日调用时点的市场快照数据。
+市场快照数据记录了每日从开盘到当前的数据信息，可以理解为一个动态的day bar数据。
+在目前分钟回测中，快照数据为当日所有分钟线累积而成，一般情况下，最后一个分钟线获取到的快照数据应当与当日的日线行情保持一致。
+需要注意，在实盘模拟中，该函数返回的是调用当时的市场快照情况，所以在同一个handle_bar中不同时点调用可能返回的数据不同。
+如果当日截止到调用时候对应股票没有任何成交，那么snapshot中的close, high, low, last几个价格水平都将以0表示。</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>instrument</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Instrument</span></code>) – 合约对象</li>
+<li><strong>frequency</strong> (<em>str</em>) – 周期频率，<cite>1d</cite> 表示日周期, <cite>1m</cite> 表示分钟周期</li>
+<li><strong>dt</strong> (<em>datetime.datetime</em>) – 时间</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><code class="xref py py-class docutils literal notranslate"><span class="pre">Snapshot</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="rqalpha.interface.AbstractDataSource.get_all_instruments">
+<code class="descname">get_all_instruments</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rqalpha/interface.html#AbstractDataSource.get_all_instruments"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#rqalpha.interface.AbstractDataSource.get_all_instruments" title="Permalink to this definition">¶</a></dt>
+<dd><p>获取所有Instrument。</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">list[<code class="xref py py-class docutils literal notranslate"><span class="pre">Instrument</span></code>]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="rqalpha.interface.AbstractDataSource.get_bar">
+<code class="descname">get_bar</code><span class="sig-paren">(</span><em>instrument</em>, <em>dt</em>, <em>frequency</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rqalpha/interface.html#AbstractDataSource.get_bar"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#rqalpha.interface.AbstractDataSource.get_bar" title="Permalink to this definition">¶</a></dt>
+<dd><p>根据 dt 来获取对应的 Bar 数据</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>instrument</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Instrument</span></code>) – 合约对象</li>
+<li><strong>dt</strong> (<em>datetime.datetime</em>) – calendar_datetime</li>
+<li><strong>frequency</strong> (<em>str</em>) – 周期频率，<cite>1d</cite> 表示日周期, <cite>1m</cite> 表示分钟周期</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><cite>numpy.ndarray</cite> | <cite>dict</cite></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="rqalpha.interface.AbstractDataSource.get_commission_info">
+<code class="descname">get_commission_info</code><span class="sig-paren">(</span><em>instrument</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rqalpha/interface.html#AbstractDataSource.get_commission_info"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#rqalpha.interface.AbstractDataSource.get_commission_info" title="Permalink to this definition">¶</a></dt>
+<dd><p>获取合约的手续费信息
+:param instrument:
+:return:</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="rqalpha.interface.AbstractDataSource.get_dividend">
+<code class="descname">get_dividend</code><span class="sig-paren">(</span><em>order_book_id</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rqalpha/interface.html#AbstractDataSource.get_dividend"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#rqalpha.interface.AbstractDataSource.get_dividend" title="Permalink to this definition">¶</a></dt>
+<dd><p>获取股票/基金分红信息</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>order_book_id</strong> (<em>str</em>) – 合约名</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="rqalpha.interface.AbstractDataSource.get_merge_ticks">
+<code class="descname">get_merge_ticks</code><span class="sig-paren">(</span><em>order_book_id_list</em>, <em>trading_date</em>, <em>last_dt=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rqalpha/interface.html#AbstractDataSource.get_merge_ticks"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#rqalpha.interface.AbstractDataSource.get_merge_ticks" title="Permalink to this definition">¶</a></dt>
+<dd><p>获取合并的 ticks</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>order_book_id_list</strong> (<em>list</em>) – 合约名列表</li>
+<li><strong>trading_date</strong> (<em>datetime.date</em>) – 交易日</li>
+<li><strong>last_dt</strong> (<em>datetime.datetime</em>) – 仅返回 last_dt 之后的时间</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Iterable object of Tick</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="rqalpha.interface.AbstractDataSource.get_settle_price">
+<code class="descname">get_settle_price</code><span class="sig-paren">(</span><em>instrument</em>, <em>date</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rqalpha/interface.html#AbstractDataSource.get_settle_price"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#rqalpha.interface.AbstractDataSource.get_settle_price" title="Permalink to this definition">¶</a></dt>
+<dd><p>获取期货品种在 date 的结算价</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>instrument</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Instrument</span></code>) – 合约对象</li>
+<li><strong>date</strong> (<em>datetime.date</em>) – 结算日期</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><cite>str</cite></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="rqalpha.interface.AbstractDataSource.get_share_transformation">
+<code class="descname">get_share_transformation</code><span class="sig-paren">(</span><em>order_book_id</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rqalpha/interface.html#AbstractDataSource.get_share_transformation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#rqalpha.interface.AbstractDataSource.get_share_transformation" title="Permalink to this definition">¶</a></dt>
+<dd><p>获取股票转换信息
+:param order_book_id: 合约代码
+:return: (successor, conversion_ratio), (转换后的合约代码，换股倍率)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="rqalpha.interface.AbstractDataSource.get_split">
+<code class="descname">get_split</code><span class="sig-paren">(</span><em>order_book_id</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rqalpha/interface.html#AbstractDataSource.get_split"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#rqalpha.interface.AbstractDataSource.get_split" title="Permalink to this definition">¶</a></dt>
+<dd><p>获取拆股信息</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>order_book_id</strong> (<em>str</em>) – 合约名</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><cite>pandas.DataFrame</cite></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="rqalpha.interface.AbstractDataSource.get_tick_size">
+<code class="descname">get_tick_size</code><span class="sig-paren">(</span><em>instrument</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rqalpha/interface.html#AbstractDataSource.get_tick_size"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#rqalpha.interface.AbstractDataSource.get_tick_size" title="Permalink to this definition">¶</a></dt>
+<dd><p>获取合约的 tick size
+:param instrument:
+:return:</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="rqalpha.interface.AbstractDataSource.get_trading_calendar">
+<code class="descname">get_trading_calendar</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rqalpha/interface.html#AbstractDataSource.get_trading_calendar"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#rqalpha.interface.AbstractDataSource.get_trading_calendar" title="Permalink to this definition">¶</a></dt>
+<dd><p>获取交易日历</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">list[<cite>pandas.Timestamp</cite>]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="rqalpha.interface.AbstractDataSource.get_trading_minutes_for">
+<code class="descname">get_trading_minutes_for</code><span class="sig-paren">(</span><em>instrument</em>, <em>trading_dt</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rqalpha/interface.html#AbstractDataSource.get_trading_minutes_for"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#rqalpha.interface.AbstractDataSource.get_trading_minutes_for" title="Permalink to this definition">¶</a></dt>
+<dd><p>获取证券某天的交易时段，用于期货回测</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>instrument</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Instrument</span></code>) – 合约对象</li>
+<li><strong>trading_dt</strong> (<em>datetime.datetime</em>) – 交易日。注意期货夜盘所属交易日规则。</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">list[<cite>datetime.datetime</cite>]</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="rqalpha.interface.AbstractDataSource.get_yield_curve">
+<code class="descname">get_yield_curve</code><span class="sig-paren">(</span><em>start_date</em>, <em>end_date</em>, <em>tenor=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rqalpha/interface.html#AbstractDataSource.get_yield_curve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#rqalpha.interface.AbstractDataSource.get_yield_curve" title="Permalink to this definition">¶</a></dt>
+<dd><p>获取国债利率</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>str start_date</strong> (<em>pandas.Timestamp</em>) – 开始日期</li>
+<li><strong>end_date</strong> (<em>pandas.Timestamp</em>) – 结束日期</li>
+<li><strong>tenor</strong> (<em>str</em>) – 利率期限</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">pandas.DataFrame, [start_date, end_date]</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="rqalpha.interface.AbstractDataSource.history_bars">
+<code class="descname">history_bars</code><span class="sig-paren">(</span><em>instrument</em>, <em>bar_count</em>, <em>frequency</em>, <em>fields</em>, <em>dt</em>, <em>skip_suspended=True</em>, <em>include_now=False</em>, <em>adjust_type='pre'</em>, <em>adjust_orig=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rqalpha/interface.html#AbstractDataSource.history_bars"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#rqalpha.interface.AbstractDataSource.history_bars" title="Permalink to this definition">¶</a></dt>
+<dd><p>获取历史数据</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>instrument</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Instrument</span></code>) – 合约对象</li>
+<li><strong>bar_count</strong> (<em>int</em>) – 获取的历史数据数量</li>
+<li><strong>frequency</strong> (<em>str</em>) – 周期频率，<cite>1d</cite> 表示日周期, <cite>1m</cite> 表示分钟周期</li>
+<li><strong>fields</strong> (<em>str</em>) – 返回数据字段</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<table border="1" class="docutils">
+<colgroup>
+<col width="33%" />
+<col width="67%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">fields</th>
+<th class="head">字段名</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>datetime</td>
+<td>时间戳</td>
+</tr>
+<tr class="row-odd"><td>open</td>
+<td>开盘价</td>
+</tr>
+<tr class="row-even"><td>high</td>
+<td>最高价</td>
+</tr>
+<tr class="row-odd"><td>low</td>
+<td>最低价</td>
+</tr>
+<tr class="row-even"><td>close</td>
+<td>收盘价</td>
+</tr>
+<tr class="row-odd"><td>volume</td>
+<td>成交量</td>
+</tr>
+<tr class="row-even"><td>total_turnover</td>
+<td>成交额</td>
+</tr>
+<tr class="row-odd"><td>datetime</td>
+<td>int类型时间戳</td>
+</tr>
+<tr class="row-even"><td>open_interest</td>
+<td>持仓量（期货专用）</td>
+</tr>
+<tr class="row-odd"><td>basis_spread</td>
+<td>期现差（股指期货专用）</td>
+</tr>
+<tr class="row-even"><td>settlement</td>
+<td>结算价（期货日线专用）</td>
+</tr>
+<tr class="row-odd"><td>prev_settlement</td>
+<td>结算价（期货日线专用）</td>
+</tr>
+</tbody>
+</table>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>dt</strong> (<em>datetime.datetime</em>) – 时间</li>
+<li><strong>skip_suspended</strong> (<em>bool</em>) – 是否跳过停牌日</li>
+<li><strong>include_now</strong> (<em>bool</em>) – 是否包含当天最新数据</li>
+<li><strong>adjust_type</strong> (<em>str</em>) – 复权类型，’pre’, ‘none’, ‘post’</li>
+<li><strong>adjust_orig</strong> (<em>datetime.datetime</em>) – 复权起点；</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><cite>numpy.ndarray</cite></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="rqalpha.interface.AbstractDataSource.history_ticks">
+<code class="descname">history_ticks</code><span class="sig-paren">(</span><em>instrument</em>, <em>count</em>, <em>dt</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rqalpha/interface.html#AbstractDataSource.history_ticks"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#rqalpha.interface.AbstractDataSource.history_ticks" title="Permalink to this definition">¶</a></dt>
+<dd><p>获取历史tick数据</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>instrument</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Instrument</span></code>) – 合约对象</li>
+<li><strong>count</strong> (<em>int</em>) – 获取的历史数据数量</li>
+<li><strong>fields</strong> (<em>str</em>) – 返回数据字段</li>
+<li><strong>dt</strong> (<em>datetime.datetime</em>) – 时间</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">list of <cite>Tick</cite></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="broker">
+<h3>Broker<a class="headerlink" href="#broker" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="rqalpha.interface.AbstractBroker">
+<em class="property">class </em><code class="descclassname">rqalpha.interface.</code><code class="descname">AbstractBroker</code><a class="reference internal" href="../_modules/rqalpha/interface.html#AbstractBroker"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#rqalpha.interface.AbstractBroker" title="Permalink to this definition">¶</a></dt>
+<dd><p>券商接口。</p>
+<p>RQAlpha 将产生的订单提交给此对象，此对象负责对订单进行撮合（不论是自行撮合还是委托给外部的真实交易所），
+并通过 <code class="docutils literal notranslate"><span class="pre">EVENT.ORDER_*</span></code> 及 <code class="docutils literal notranslate"><span class="pre">EVENT.TRADE</span></code> 事件将撮合结果反馈进入 RQAlpha。</p>
+<p>在扩展模块中，可以通过调用 <code class="docutils literal notranslate"><span class="pre">env.set_broker</span></code> 来替换默认的 Broker。</p>
+<dl class="method">
+<dt id="rqalpha.interface.AbstractBroker.cancel_order">
+<code class="descname">cancel_order</code><span class="sig-paren">(</span><em>order</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rqalpha/interface.html#AbstractBroker.cancel_order"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#rqalpha.interface.AbstractBroker.cancel_order" title="Permalink to this definition">¶</a></dt>
+<dd><p>[Required]</p>
+<p>撤单。</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>order</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Order</span></code>) – 订单</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="rqalpha.interface.AbstractBroker.get_open_orders">
+<code class="descname">get_open_orders</code><span class="sig-paren">(</span><em>order_book_id=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rqalpha/interface.html#AbstractBroker.get_open_orders"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#rqalpha.interface.AbstractBroker.get_open_orders" title="Permalink to this definition">¶</a></dt>
+<dd><p>[Required]</p>
+<p>获得当前未完成的订单。</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">list[<code class="xref py py-class docutils literal notranslate"><span class="pre">Order</span></code>]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="rqalpha.interface.AbstractBroker.get_portfolio">
+<code class="descname">get_portfolio</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rqalpha/interface.html#AbstractBroker.get_portfolio"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#rqalpha.interface.AbstractBroker.get_portfolio" title="Permalink to this definition">¶</a></dt>
+<dd><p>[Required]</p>
+<p>获取投资组合。系统初始化时，会调用此接口，获取包含账户信息、净值、份额等内容的投资组合</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Portfolio</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="rqalpha.interface.AbstractBroker.submit_order">
+<code class="descname">submit_order</code><span class="sig-paren">(</span><em>order</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rqalpha/interface.html#AbstractBroker.submit_order"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#rqalpha.interface.AbstractBroker.submit_order" title="Permalink to this definition">¶</a></dt>
+<dd><p>[Required]</p>
+<p>提交订单。在当前版本，RQAlpha 会生成 <code class="xref py py-class docutils literal notranslate"><span class="pre">Order</span></code> 对象，再通过此接口提交到 Broker。
+TBD: 由 Broker 对象生成 Order 并返回？</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="priceboarder">
+<h3>PriceBoarder<a class="headerlink" href="#priceboarder" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="rqalpha.interface.AbstractPriceBoard">
+<em class="property">class </em><code class="descclassname">rqalpha.interface.</code><code class="descname">AbstractPriceBoard</code><a class="reference internal" href="../_modules/rqalpha/interface.html#AbstractPriceBoard"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#rqalpha.interface.AbstractPriceBoard" title="Permalink to this definition">¶</a></dt>
+<dd><p>RQAlpha多个地方需要使用最新「行情」，不同的数据源其最新价格获取的方式不尽相同</p>
+<p>因此抽离出 <cite>AbstractPriceBoard</cite>, 您可以自行进行扩展并替换默认 PriceBoard</p>
+<dl class="method">
+<dt id="rqalpha.interface.AbstractPriceBoard.get_last_price">
+<code class="descname">get_last_price</code><span class="sig-paren">(</span><em>order_book_id</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rqalpha/interface.html#AbstractPriceBoard.get_last_price"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#rqalpha.interface.AbstractPriceBoard.get_last_price" title="Permalink to this definition">¶</a></dt>
+<dd><p>获取证券的最新价格</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="mod">
+<h3>Mod<a class="headerlink" href="#mod" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="rqalpha.interface.AbstractMod">
+<em class="property">class </em><code class="descclassname">rqalpha.interface.</code><code class="descname">AbstractMod</code><a class="reference internal" href="../_modules/rqalpha/interface.html#AbstractMod"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#rqalpha.interface.AbstractMod" title="Permalink to this definition">¶</a></dt>
+<dd><p>扩展模块接口。</p>
+<dl class="method">
+<dt id="rqalpha.interface.AbstractMod.start_up">
+<code class="descname">start_up</code><span class="sig-paren">(</span><em>env</em>, <em>mod_config</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rqalpha/interface.html#AbstractMod.start_up"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#rqalpha.interface.AbstractMod.start_up" title="Permalink to this definition">¶</a></dt>
+<dd><p>RQAlpha 在系统启动时会调用此接口；在此接口中，可以通过调用 <code class="docutils literal notranslate"><span class="pre">env</span></code> 的相应方法来覆盖系统默认组件。</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>env</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Environment</span></code>) – 系统环境</li>
+<li><strong>mod_config</strong> – 模块配置参数</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="rqalpha.interface.AbstractMod.tear_down">
+<code class="descname">tear_down</code><span class="sig-paren">(</span><em>code</em>, <em>exception=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rqalpha/interface.html#AbstractMod.tear_down"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#rqalpha.interface.AbstractMod.tear_down" title="Permalink to this definition">¶</a></dt>
+<dd><p>RQAlpha 在系统退出前会调用此接口。</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>code</strong> (<em>rqalpha.const.EXIT_CODE</em>) – 退出代码</li>
+<li><strong>exception</strong> – 如果在策略执行过程中出现错误，此对象为相应的异常对象</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="persistprovider">
+<h3>PersistProvider<a class="headerlink" href="#persistprovider" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="rqalpha.interface.AbstractPersistProvider">
+<em class="property">class </em><code class="descclassname">rqalpha.interface.</code><code class="descname">AbstractPersistProvider</code><a class="reference internal" href="../_modules/rqalpha/interface.html#AbstractPersistProvider"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#rqalpha.interface.AbstractPersistProvider" title="Permalink to this definition">¶</a></dt>
+<dd><p>持久化服务提供者接口。</p>
+<p>扩展模块可以通过调用 <code class="docutils literal notranslate"><span class="pre">env.set_persist_provider</span></code> 接口来替换默认的持久化方案。</p>
+<dl class="method">
+<dt id="rqalpha.interface.AbstractPersistProvider.load">
+<code class="descname">load</code><span class="sig-paren">(</span><em>key</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rqalpha/interface.html#AbstractPersistProvider.load"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#rqalpha.interface.AbstractPersistProvider.load" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>key</strong> (<em>str</em>) – </td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">bytes 如果没有对应的值，返回 None</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="rqalpha.interface.AbstractPersistProvider.store">
+<code class="descname">store</code><span class="sig-paren">(</span><em>key</em>, <em>value</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rqalpha/interface.html#AbstractPersistProvider.store"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#rqalpha.interface.AbstractPersistProvider.store" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>key</strong> (<em>str</em>) – </li>
+<li><strong>value</strong> (<em>bytes</em>) – </li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">基本概念</a><ul>
+<li><a class="reference internal" href="#module-rqalpha.interface">接口</a><ul>
+<li><a class="reference internal" href="#account">Account</a></li>
+<li><a class="reference internal" href="#position">Position</a></li>
+<li><a class="reference internal" href="#strategyloader">StrategyLoader</a></li>
+<li><a class="reference internal" href="#eventsource">EventSource</a></li>
+<li><a class="reference internal" href="#datasource">DataSource</a></li>
+<li><a class="reference internal" href="#broker">Broker</a></li>
+<li><a class="reference internal" href="#priceboarder">PriceBoarder</a></li>
+<li><a class="reference internal" href="#mod">Mod</a></li>
+<li><a class="reference internal" href="#persistprovider">PersistProvider</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="make_contribute.html"
+                        title="previous chapter">如何贡献代码</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="mod.html"
+                        title="next chapter">Mod</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/development/basic_concept.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="mod.html" title="Mod"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="make_contribute.html" title="如何贡献代码"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">CNICPortofolio 0.0 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+        &#169; Copyright .
+      Last updated on Sep 06, 2019.
+    </div>
+<script type="text/javascript">
+    console.log("RQAlpha Powered By RiceQuant.");
+</script>
+
+  </body>
+</html>

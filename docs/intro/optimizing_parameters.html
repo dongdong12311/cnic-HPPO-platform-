@@ -1,0 +1,276 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>参数调优 &#8212; CNICPortofolio 0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="如何贡献代码" href="../development/make_contribute.html" />
+    <link rel="prev" title="多种方式运行策略" href="run_algorithm.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../development/make_contribute.html" title="如何贡献代码"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="run_algorithm.html" title="多种方式运行策略"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">CNICPortofolio 0.0 documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="intro-optimizing-parameters">
+<span id="id1"></span><h1>参数调优<a class="headerlink" href="#intro-optimizing-parameters" title="Permalink to this headline">¶</a></h1>
+<p>对于以下双均线策略，我们希望对其进行参数调优，我们可以通过命令行参数 <code class="code docutils literal notranslate"><span class="pre">--extra-vars</span></code> 或者通过配置 <code class="code docutils literal notranslate"><span class="pre">extra.context_vars</span></code> 传递变量到 <code class="code docutils literal notranslate"><span class="pre">context</span></code> 对象中。</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">rqalpha.api</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">import</span> <span class="nn">talib</span>
+
+
+<span class="k">def</span> <span class="nf">init</span><span class="p">(</span><span class="n">context</span><span class="p">):</span>
+    <span class="n">context</span><span class="o">.</span><span class="n">s1</span> <span class="o">=</span> <span class="s2">&quot;000001.XSHE&quot;</span>
+
+    <span class="n">context</span><span class="o">.</span><span class="n">SHORTPERIOD</span> <span class="o">=</span> <span class="mi">20</span>
+    <span class="n">context</span><span class="o">.</span><span class="n">LONGPERIOD</span> <span class="o">=</span> <span class="mi">120</span>
+
+
+<span class="k">def</span> <span class="nf">handle_bar</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="n">bar_dict</span><span class="p">):</span>
+    <span class="n">prices</span> <span class="o">=</span> <span class="n">history_bars</span><span class="p">(</span><span class="n">context</span><span class="o">.</span><span class="n">s1</span><span class="p">,</span> <span class="n">context</span><span class="o">.</span><span class="n">LONGPERIOD</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;1d&#39;</span><span class="p">,</span> <span class="s1">&#39;close&#39;</span><span class="p">)</span>
+
+    <span class="n">short_avg</span> <span class="o">=</span> <span class="n">talib</span><span class="o">.</span><span class="n">SMA</span><span class="p">(</span><span class="n">prices</span><span class="p">,</span> <span class="n">context</span><span class="o">.</span><span class="n">SHORTPERIOD</span><span class="p">)</span>
+    <span class="n">long_avg</span> <span class="o">=</span> <span class="n">talib</span><span class="o">.</span><span class="n">SMA</span><span class="p">(</span><span class="n">prices</span><span class="p">,</span> <span class="n">context</span><span class="o">.</span><span class="n">LONGPERIOD</span><span class="p">)</span>
+
+    <span class="n">cur_position</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">portfolio</span><span class="o">.</span><span class="n">positions</span><span class="p">[</span><span class="n">context</span><span class="o">.</span><span class="n">s1</span><span class="p">]</span><span class="o">.</span><span class="n">quantity</span>
+    <span class="n">shares</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">portfolio</span><span class="o">.</span><span class="n">cash</span> <span class="o">/</span> <span class="n">bar_dict</span><span class="p">[</span><span class="n">context</span><span class="o">.</span><span class="n">s1</span><span class="p">]</span><span class="o">.</span><span class="n">close</span>
+
+    <span class="k">if</span> <span class="n">short_avg</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">long_avg</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">short_avg</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="n">long_avg</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">cur_position</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">order_target_value</span><span class="p">(</span><span class="n">context</span><span class="o">.</span><span class="n">s1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">short_avg</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">long_avg</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">short_avg</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="n">long_avg</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">order_shares</span><span class="p">(</span><span class="n">context</span><span class="o">.</span><span class="n">s1</span><span class="p">,</span> <span class="n">shares</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="section" id="id2">
+<h2>通过函数调用传递参数<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">concurrent.futures</span>
+<span class="kn">import</span> <span class="nn">multiprocessing</span>
+<span class="kn">from</span> <span class="nn">rqalpha</span> <span class="kn">import</span> <span class="n">run</span>
+
+
+<span class="n">tasks</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">short_period</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">2</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">long_period</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">30</span><span class="p">,</span> <span class="mi">90</span><span class="p">,</span> <span class="mi">5</span><span class="p">):</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;extra&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;context_vars&quot;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">&quot;SHORTPERIOD&quot;</span><span class="p">:</span> <span class="n">short_period</span><span class="p">,</span>
+                    <span class="s2">&quot;LONGPERIOD&quot;</span><span class="p">:</span> <span class="n">long_period</span><span class="p">,</span>
+                <span class="p">},</span>
+                <span class="s2">&quot;log_level&quot;</span><span class="p">:</span> <span class="s2">&quot;error&quot;</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="s2">&quot;base&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;matching_type&quot;</span><span class="p">:</span> <span class="s2">&quot;current_bar&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;start_date&quot;</span><span class="p">:</span> <span class="s2">&quot;2015-01-01&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;end_date&quot;</span><span class="p">:</span> <span class="s2">&quot;2016-01-01&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;benchmark&quot;</span><span class="p">:</span> <span class="s2">&quot;000001.XSHE&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;frequency&quot;</span><span class="p">:</span> <span class="s2">&quot;1d&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;strategy_file&quot;</span><span class="p">:</span> <span class="s2">&quot;rqalpha/examples/golden_cross.py&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;accounts&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;stock&quot;</span><span class="p">:</span> <span class="mi">100000</span>
+        <span class="p">}</span>
+            <span class="p">},</span>
+            <span class="s2">&quot;mod&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;sys_progress&quot;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">&quot;enabled&quot;</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span>
+                    <span class="s2">&quot;show&quot;</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span>
+                <span class="p">},</span>
+                <span class="s2">&quot;sys_analyser&quot;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">&quot;enabled&quot;</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span>
+                    <span class="s2">&quot;output_file&quot;</span><span class="p">:</span> <span class="s2">&quot;results/out-{short_period}-{long_period}.pkl&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="n">short_period</span><span class="o">=</span><span class="n">short_period</span><span class="p">,</span>
+                        <span class="n">long_period</span><span class="o">=</span><span class="n">long_period</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="p">},</span>
+            <span class="p">},</span>
+        <span class="p">}</span>
+
+        <span class="n">tasks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">run_bt</span><span class="p">(</span><span class="n">config</span><span class="p">):</span>
+    <span class="n">run</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="k">with</span> <span class="n">concurrent</span><span class="o">.</span><span class="n">futures</span><span class="o">.</span><span class="n">ProcessPoolExecutor</span><span class="p">(</span><span class="n">max_workers</span><span class="o">=</span><span class="n">multiprocessing</span><span class="o">.</span><span class="n">cpu_count</span><span class="p">())</span> <span class="k">as</span> <span class="n">executor</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">tasks</span><span class="p">:</span>
+        <span class="n">executor</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span><span class="n">run_bt</span><span class="p">,</span> <span class="n">task</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="id3">
+<h2>通过命令行传递参数<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">concurrent.futures</span>
+<span class="kn">import</span> <span class="nn">multiprocessing</span>
+
+
+<span class="n">tasks</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">short_period</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">2</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">long_period</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">30</span><span class="p">,</span> <span class="mi">90</span><span class="p">,</span> <span class="mi">5</span><span class="p">):</span>
+        <span class="n">extra_vars</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;SHORTPERIOD&quot;</span><span class="p">:</span> <span class="n">short_period</span><span class="p">,</span>
+            <span class="s2">&quot;LONGPERIOD&quot;</span><span class="p">:</span> <span class="n">long_period</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="n">vars_params</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">extra_vars</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+
+        <span class="n">cmd</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;rqalpha run -fq 1d -f rqalpha/examples/golden_cross.py --start-date 2015-01-01 --end-date 2016-01-01 &quot;</span>
+               <span class="s2">&quot;-o results/out-{short_period}-{long_period}.pkl --account stock 100000 --progress -bm 000001.XSHE --extra-vars &#39;{params}&#39; &quot;</span><span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                   <span class="n">short_period</span><span class="o">=</span><span class="n">short_period</span><span class="p">,</span>
+                   <span class="n">long_period</span><span class="o">=</span><span class="n">long_period</span><span class="p">,</span>
+                   <span class="n">params</span><span class="o">=</span><span class="n">vars_params</span><span class="p">)</span>
+
+        <span class="n">tasks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">run_bt</span><span class="p">(</span><span class="n">cmd</span><span class="p">):</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">system</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="k">with</span> <span class="n">concurrent</span><span class="o">.</span><span class="n">futures</span><span class="o">.</span><span class="n">ProcessPoolExecutor</span><span class="p">(</span><span class="n">max_workers</span><span class="o">=</span><span class="n">multiprocessing</span><span class="o">.</span><span class="n">cpu_count</span><span class="p">())</span> <span class="k">as</span> <span class="n">executor</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">tasks</span><span class="p">:</span>
+        <span class="n">executor</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span><span class="n">run_bt</span><span class="p">,</span> <span class="n">task</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="id4">
+<h2>分析批量回测结果<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">glob</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="kn">as</span> <span class="nn">pd</span>
+
+
+<span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+
+<span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">&quot;results/*.pkl&quot;</span><span class="p">):</span>
+    <span class="n">result_dict</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_pickle</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="n">summary</span> <span class="o">=</span> <span class="n">result_dict</span><span class="p">[</span><span class="s2">&quot;summary&quot;</span><span class="p">]</span>
+    <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+        <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span>
+        <span class="s2">&quot;annualized_returns&quot;</span><span class="p">:</span> <span class="n">summary</span><span class="p">[</span><span class="s2">&quot;annualized_returns&quot;</span><span class="p">],</span>
+        <span class="s2">&quot;sharpe&quot;</span><span class="p">:</span> <span class="n">summary</span><span class="p">[</span><span class="s2">&quot;sharpe&quot;</span><span class="p">],</span>
+        <span class="s2">&quot;max_drawdown&quot;</span><span class="p">:</span> <span class="n">summary</span><span class="p">[</span><span class="s2">&quot;max_drawdown&quot;</span><span class="p">],</span>
+    <span class="p">})</span>
+
+<span class="n">results_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+
+<span class="k">print</span><span class="p">(</span><span class="s2">&quot;-&quot;</span> <span class="o">*</span> <span class="mi">50</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="s2">&quot;Sort by sharpe&quot;</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">results_df</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="s2">&quot;sharpe&quot;</span><span class="p">,</span> <span class="n">ascending</span><span class="o">=</span><span class="bp">False</span><span class="p">)[:</span><span class="mi">10</span><span class="p">])</span>
+
+<span class="k">print</span><span class="p">(</span><span class="s2">&quot;-&quot;</span> <span class="o">*</span> <span class="mi">50</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="s2">&quot;Sort by annualized_returns&quot;</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">results_df</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="s2">&quot;annualized_returns&quot;</span><span class="p">,</span> <span class="n">ascending</span><span class="o">=</span><span class="bp">False</span><span class="p">)[:</span><span class="mi">10</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">参数调优</a><ul>
+<li><a class="reference internal" href="#id2">通过函数调用传递参数</a></li>
+<li><a class="reference internal" href="#id3">通过命令行传递参数</a></li>
+<li><a class="reference internal" href="#id4">分析批量回测结果</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="run_algorithm.html"
+                        title="previous chapter">多种方式运行策略</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="../development/make_contribute.html"
+                        title="next chapter">如何贡献代码</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/intro/optimizing_parameters.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../development/make_contribute.html" title="如何贡献代码"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="run_algorithm.html" title="多种方式运行策略"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">CNICPortofolio 0.0 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+        &#169; Copyright .
+      Last updated on Sep 06, 2019.
+    </div>
+<script type="text/javascript">
+    console.log("RQAlpha Powered By RiceQuant.");
+</script>
+
+  </body>
+</html>

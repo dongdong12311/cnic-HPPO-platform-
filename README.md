@@ -1,1 +1,0 @@
-# cnic_platform
